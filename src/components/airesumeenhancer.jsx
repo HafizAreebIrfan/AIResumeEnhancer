@@ -799,7 +799,7 @@ export default function AIResumeEnhancer() {
                       </p>
                       {airesponse.enhancedresume.corrections.map(
                         (corrections, index) => (
-                          <>
+                          <div key={index}>
                             <p className={`${styles.correctioncontent}`}>
                               <span>{corrections.section} Section:</span>{" "}
                               {corrections.item}
@@ -812,7 +812,7 @@ export default function AIResumeEnhancer() {
                               <span>Replace with(Suggestion):</span>{" "}
                               {corrections.suggestion? corrections.suggestion : corrections.correction ? corrections.correction : "No suggestion. Keep the original one."}
                             </p>
-                          </>
+                          </div>
                         )
                       )}
                     </TabPanel>
