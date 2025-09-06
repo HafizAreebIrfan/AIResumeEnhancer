@@ -1,0 +1,74 @@
+.homecontainer {
+  position: relative;
+  background: url("../assets/banner.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 100vh;
+  z-index: 1;
+}
+.homeoverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000000a1;
+  z-index: 2;
+}
+.textoverlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1000px;
+  height: auto;
+  /* background-color: rgba(255, 255, 255, 0.35); */
+  filter: blur(0.8);
+  border-radius: 10px;
+  z-index: 3;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.15); 
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.014);
+  padding: 20px;
+}
+.textoverlay h1 {
+  font-size: 35px;
+  font-weight: 600;
+  color: #ffffffff;
+}
+.textoverlay .headingspan {
+  font-size: 35px;
+  font-weight: 700;
+  color: #ef8354ff;
+}
+.textoverlay p {
+  font-size: 18px;
+  font-weight: 400;
+  color: #ffffffff;
+  margin-top: 15px;
+}
+.textoverlay .paraspan {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ef8354ff;
+}
+.textoverlay .homebtn {
+  font-size: 18px;
+  font-weight: 400;
+  background-color: #ef8354ff;
+  color: #ffffffff;
+  border-radius: 10px;
+  border: 1px solid #ef8354ff;
+  cursor: pointer;
+  transition: 0.3s ease;
+  padding: 10px 15px;
+  margin-top: 15px;
+}
+.textoverlay .homebtn:hover{
+    background-color: #ffffffff;
+    border: 1px solid #ef8354ff;
+    color: #ef8354ff;
+}

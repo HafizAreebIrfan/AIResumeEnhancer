@@ -1,0 +1,61 @@
+.header {
+  padding: 10px 30px;
+  margin: 15px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.014);
+  border-radius: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+}
+.header nav,
+.header nav ul {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header nav .logo {
+  width: 200px;
+  object-fit: cover;
+}
+.header nav ul{
+    margin-bottom: 0;
+}
+.header nav ul li {
+  margin-right: 25px;
+}
+.header nav ul li a {
+  font-size: 18px;
+  font-weight: 400;
+  cursor: pointer;
+  color: #ffffffff;
+  transition: all 0.3s ease;
+}
+.header nav ul li a:hover {
+  color: #ef8354ff;
+  border-bottom: 1px solid #ef8354ff;
+}
+.header nav ul li .active {
+  color: #ef8354ff;
+  border-bottom: 1px solid #ef8354ff;
+}
+.header .headerbtn {
+  font-size: 18px;
+  font-weight: 400;
+  background-color: #ef8354ff;
+  color: #ffffffff;
+  border-radius: 10px;
+  border: 1px solid #ef8354ff;
+  cursor: pointer;
+  transition: 0.3s ease;
+  padding: 10px 15px;
+}
+.header .headerbtn:hover {
+  background-color: #ffffffff;
+  border: 1px solid #ef8354ff;
+  color: #ef8354ff;
+}
