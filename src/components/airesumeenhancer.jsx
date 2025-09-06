@@ -806,11 +806,11 @@ export default function AIResumeEnhancer() {
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>What to replace:</span>{" "}
-                              {corrections.original? corrections.original : "null"}
+                              {corrections.original? corrections.original : corrections.point? corrections.point : "null"}
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>Replace with(Suggestion):</span>{" "}
-                              {corrections.suggestion}
+                              {corrections.suggestion? corrections.suggestion : corrections.correction ? corrections.correction : "No suggestion. Keep the original one."}
                             </p>
                           </>
                         )
