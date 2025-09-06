@@ -13,6 +13,7 @@
     "@google/genai": "^1.16.0",
     "@pdf-viewer/react": "^1.8.4",
     "@react-pdf-viewer/core": "^3.12.0",
+    "@vercel/speed-insights": "^1.2.0",
     "bootstrap": "^5.3.8",
     "dotenv": "^17.2.2",
     "pdfjs-dist": "^3.4.120",
