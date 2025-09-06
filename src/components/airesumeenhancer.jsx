@@ -801,8 +801,8 @@ export default function AIResumeEnhancer() {
                         (corrections, index) => (
                           <>
                             <p className={`${styles.correctioncontent}`}>
-                              <span>{corrections.section}:</span>{" "}
-                              {corrections.item} Section
+                              <span>{corrections.section} Section:</span>{" "}
+                              {corrections.item}
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>What to replace:</span>{" "}
