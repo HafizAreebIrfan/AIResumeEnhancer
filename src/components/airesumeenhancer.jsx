@@ -16,6 +16,7 @@ import "react-tabs/style/react-tabs.css";
 import { buildStyles, CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import Markdown from "react-markdown";
+import favicon from "../assets/favicon.png";
 
 const fileTypes = ["PDF"];
 
@@ -29,7 +30,14 @@ export default function AIResumeEnhancer() {
   const [jobdescurl, setjobdescurl] = useState("");
   const [jobdesctext, setjobdesctext] = useState("");
   const [skeletonloader, setskeletonloader] = useState(false);
-  const apikey = import.meta.env.VITE_API
+  const [interviewloader, setintreviewloader] = useState(false);
+  const [interviewquestions, setinterviewquesitons] = useState("");
+  const [tabindex, settabindex] = useState(0);
+  const [interviewbar, setinterviewbar] = useState(true);
+  const [showtoast, setshowtoast] = useState(false);
+  const [message, setmessage] = useState("");
+
+  const apikey = import.meta.env.VITE_API;
 
   const handleChange = (file) => {
     setFile(file);
@@ -50,7 +58,7 @@ export default function AIResumeEnhancer() {
       urlreader.onloadend = () => {
         const base64string = urlreader.result;
         setjobdescurl(base64string);
-        localStorage.setItem("Saveresumeurl", base64string);
+        localStorage.setItem("Savejoburl", base64string);
       };
       if (jobdescurl) {
         urlreader.readAsDataURL(jobdescurl);
@@ -63,13 +71,20 @@ export default function AIResumeEnhancer() {
     const retrieveresumeurl = localStorage.getItem("Saveresumeurl");
     const retrievejobdesc = localStorage.getItem("Savejobdesc");
     const retrievejoburl = localStorage.getItem("Savejoburl");
+    const retrieveinterviewquestions = localStorage.getItem(
+      "Saveinterviewquestions"
+    );
     const converttoobject = JSON.parse(retrieveresponse);
+    const convertinterviewtoobject = JSON.parse(retrieveinterviewquestions);
     if (converttoobject) {
-      console.log("response", converttoobject);
       setresumeurl(retrieveresumeurl);
       setjobdesctext(retrievejobdesc);
       setjobdescurl(retrievejoburl);
       setairesponse(converttoobject);
+    }
+    if (convertinterviewtoobject) {
+      setinterviewquesitons(convertinterviewtoobject);
+      setinterviewbar(false);
     }
     setTimeout(() => {
       setskeletonloader(false);
@@ -87,13 +102,9 @@ export default function AIResumeEnhancer() {
       setemptyjderror(true);
       return;
     }
-    const extractedtextdata = pdfToText(file);
-    extractedtextdata.then((resumedata) => {
-      handleapiresponse(resumedata, data);
-    });
+    handleapiresponse(data);
   };
-  const handleapiresponse = async (resumedata, data) => {
-    console.log("api called");
+  const handleapiresponse = async (data) => {
     const ai = new GoogleGenAI({
       apiKey: apikey,
     });
@@ -216,12 +227,12 @@ export default function AIResumeEnhancer() {
         enhancedresume: {
           type: "OBJECT",
           description:
-            "Rewrite candidate resume with the changes and suggestion you suggest either for atsformat, skills, weaknesses. Your respose should be in JSON and every details should be in different Arrays and with proper name and place where the correction has to be made.",
+            "Rewrite candidate resume with the changes and suggestion you suggest either for atsformat, skills, weaknesses. Your respose should be in JSON and every details should be in different Arrays and with proper name like (Section, Item, Original, Correction).",
           properties: {
             corrections: {
               type: "ARRAY",
               description:
-                "Show all corrections in each array with proper name and place where the correction has to be made.",
+                "Show all corrections in each array with proper name like Section, Item, Original, and Correction. And place where the correction has to be made.",
             },
           },
         },
@@ -232,7 +243,8 @@ export default function AIResumeEnhancer() {
       setloader(true);
       const resume = localStorage.getItem("Saveresumeurl");
       if (!resume) {
-        console.log("No resume file found in localStorage.");
+        setmessage("No resume file found in localStorage.");
+        setshowtoast(true);
         setloader(false);
         return;
       }
@@ -339,7 +351,7 @@ export default function AIResumeEnhancer() {
         enhancedresume: {
           type: "OBJECT",
           description:
-            "Rewrite candidate resume with the changes and suggestion you suggest either for atsformat, skills, weaknesses. Your respose should be in JSON and every details should be in different Arrays and with proper name and place where the correction has to be made.",
+            "Rewrite candidate resume with the changes and suggestion you suggest either for atsformat, skills, weaknesses. Your respose should be in JSON and every details should be in different Arrays and with proper name like (Section, Item, Original, Correction).",
           properties: {
             corrections: {
               type: "ARRAY",
@@ -373,53 +385,155 @@ export default function AIResumeEnhancer() {
           const extracttext = parseddata.match(/({[\s\S]*})/);
           if (extracttext && extracttext[1]) {
             const parsedanalysis = JSON.parse(extracttext[1]);
-            console.log(parsedanalysis);
             if (parsedanalysis) {
               setairesponse(parsedanalysis);
               const converttostring = JSON.stringify(parsedanalysis);
               localStorage.setItem("Saveresponse", converttostring);
             } else {
-              console.log("failed to generate response");
+              setmessage("failed to generate response.");
+              setshowtoast(true);
             }
           }
         } catch (e) {
           console.log(e);
         }
       } else {
-        console.log("No text found in the API response.");
+        setmessage("No text found in the API response.");
+        setshowtoast(true);
       }
     } catch (e) {
-      console.log(e);
+      setmessage(`No API response. ${e}`);
+      setshowtoast(true);
     } finally {
       setloader(false);
     }
   };
+  const handleinterview = async (index) => {
+    const retrieveinterviewquestions = localStorage.getItem(
+      "Saveinterviewquestions"
+    );
+    if (index === 3 && !retrieveinterviewquestions) {
+      settabindex(3);
+      setinterviewbar(false);
+      setmessage("interview api called after clicking on interview bar.");
+      setshowtoast(true);
+      const ai = new GoogleGenAI({
+        apiKey: apikey,
+      });
+      try {
+        setintreviewloader(true);
+        const resumepdf = localStorage.getItem("Saveresumeurl");
+        const jobpdf = localStorage.getItem("Savejobdesc");
+        const jobtext = localStorage.getItem("Savejobdesc");
+        const interviewSchema = {
+          type: "OBJECT",
+          properties: {
+            interviewquestions: {
+              type: "ARRAY",
+              items: { type: "STRING" },
+            },
+          },
+        };
+        const interviewprompt = `You are a senior technical recruiter for a leading tech company. Your task is to ask interview questions according to the job role/job description he provided. Here it is ${jobtext}. Also ask some questions according to his/her ${resumepdf}. Provide a professional, structured JSON object in following way:
+     type: "OBJECT",
+      properties: {
+        interviewquestions: {
+        type: "ARRAY",
+        items: {type: "STRING"},
+        },
+      },`;
+        const response = await ai.models.generateContent({
+          model: "gemini-2.0-flash-lite",
+          contents: {
+            parts: [
+              {
+                text: `${interviewprompt}\n\nResume:\n${resumepdf}\n\nJob Role/Desc:\n${jobtext}`,
+              },
+              {
+                inlineData: {
+                  mimeType: "application/pdf",
+                  data: resumepdf.split(",")[1],
+                },
+              },
+            ],
+          },
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: interviewSchema,
+          },
+        });
+        if (response) {
+          const parseddata = response.candidates[0].content.parts[0].text;
+          try {
+            const extracttext = parseddata.match(/({[\s\S]*})/);
+            if (extracttext && extracttext[1]) {
+              const parsedanalysis = JSON.parse(extracttext[1]);
+              if (parsedanalysis) {
+                setinterviewquesitons(parsedanalysis);
+                const converttostring = JSON.stringify(parsedanalysis);
+                localStorage.setItem("Saveinterviewquestions", converttostring);
+              } else {
+                setmessage("Failed to generate response.");
+                setshowtoast(true);
+              }
+            }
+          } catch (e) {
+            setmessage(`API Error ${e}`);
+            setshowtoast(true);
+          }
+        } else {
+          setmessage("No text found in the API response.");
+          setshowtoast(true);
+        }
+      } catch (e) {
+        setmessage(`API Error ${e}`);
+        setshowtoast(true);
+      } finally {
+        setintreviewloader(false);
+      }
+    } else {
+      setmessage("Api not called while clicking on tabs.");
+      setshowtoast(true);
+      settabindex(index);
+      setskeletonloader(false);
+    }
+  };
 
   return (
-    <>
+    <section id="airesumeenhancer">
       <div className={`${styles.enhancercontainer}`}>
         {airesponse ? (
           <>
-            {skeletonloader ? (
+            {skeletonloader === true ? (
               <Skeleton style={{ marginTop: "20px" }} count={1} height={30} />
             ) : (
-              <div className={`${styles.interviewprepcontainer}`}>
-                <div className={`${styles.interview}`}>
-                  <div className="">
-                    <h1>Preparing for interview?</h1>
+              <>
+                {interviewbar === false ? (
+                  ""
+                ) : (
+                  <div className={`${styles.interviewprepcontainer}`}>
+                    <div className={`${styles.interview}`}>
+                      <div className="">
+                        <h1>Preparing for interview?</h1>
 
-                    <p>
-                      Are you preparing for interview? Click here to generate
-                      real interview questions according to your job role.
-                    </p>
+                        <p>
+                          Are you preparing for interview? Click here to
+                          generate real interview questions according to your
+                          job role.
+                        </p>
+                      </div>
+                      <div className="">
+                        <button
+                          className={`${styles.jobinterviewbtn}`}
+                          onClick={() => handleinterview(3)}
+                        >
+                          Generate Questions
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="">
-                    <button className={`${styles.jobinterviewbtn}`}>
-                      Generate Questions
-                    </button>
-                  </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
 
             <div className={`${styles.enhancerow}`}>
@@ -431,15 +545,19 @@ export default function AIResumeEnhancer() {
 
                   <div className={`${styles.matchscore}`}>
                     <div className={`${styles.mainscore}`}>
-                      <div className="">
+                      <div className={`${styles.mainscorecols}`}>
                         <h1>Overall Score</h1>
                         <p>
                           An overall match score for the job description
                           provided, out of 100%.
                         </p>
                       </div>
-                      <div className="" style={{ width: 90, height: 90 }}>
+                      <div
+                        className={`${styles.mainscorecols}`}
+                        style={{ width: 90, height: 90 }}
+                      >
                         <CircularProgressbar
+                          className={`${styles.CircularProgressbar}`}
                           styles={
                             airesponse.matchScore.overall >= 75
                               ? buildStyles({
@@ -737,7 +855,10 @@ export default function AIResumeEnhancer() {
                 <Skeleton style={{ marginTop: "20px" }} count={50.5} />
               ) : (
                 <div className={`${styles.responsecolright}`}>
-                  <Tabs>
+                  <Tabs
+                    selectedIndex={tabindex}
+                    onSelect={(tabIndex) => handleinterview(tabIndex)}
+                  >
                     <TabList
                       style={{
                         borderBottom: "1px solid #d8d8d8",
@@ -763,8 +884,18 @@ export default function AIResumeEnhancer() {
                       >
                         Enhanced Resume
                       </Tab>
+                      {tabindex === 3 || interviewquestions ? (
+                        <Tab
+                          tabIndex={tabindex}
+                          style={{ borderBottom: "1px solid #d8d8d8" }}
+                          selectedClassName={`${styles.tab}`}
+                        >
+                          Interview Questions
+                        </Tab>
+                      ) : (
+                        ""
+                      )}
                     </TabList>
-
                     <TabPanel>
                       <iframe
                         src={resumeurl}
@@ -801,21 +932,51 @@ export default function AIResumeEnhancer() {
                         (corrections, index) => (
                           <div key={index}>
                             <p className={`${styles.correctioncontent}`}>
-                              <span>{corrections.section} Section:</span>{" "}
-                              {corrections.item}
+                              <span>{corrections.Section} Section:</span>{" "}
+                              {corrections.Item}
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>What to replace:</span>{" "}
-                              {corrections.original? corrections.original : corrections.point? corrections.point : "null"}
+                              {corrections.Original
+                                ? corrections.Original
+                                : "null"}
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>Replace with(Suggestion):</span>{" "}
-                              {corrections.suggestion? corrections.suggestion : corrections.correction ? corrections.correction : "No suggestion. Keep the original one."}
+                              {corrections.Correction
+                                ? corrections.Correction
+                                : "No suggestion. Keep the original one."}
                             </p>
                           </div>
                         )
                       )}
                     </TabPanel>
+                    {tabindex === 3 || interviewquestions ? (
+                      <TabPanel className={`${styles.interviewprep}`}>
+                        <h1>Interview Questions</h1>
+                        {interviewloader === true ? (
+                          <Skeleton
+                            style={{ marginTop: "20px" }}
+                            count={10.5}
+                          />
+                        ) : (
+                          <>
+                            {interviewquestions.interviewquestions.map(
+                              (question, index) => {
+                                return (
+                                  <div key={index}>
+                                    <span>Q: </span>
+                                    <Markdown>{question}</Markdown>
+                                  </div>
+                                );
+                              }
+                            )}
+                          </>
+                        )}
+                      </TabPanel>
+                    ) : (
+                      ""
+                    )}
                   </Tabs>
                 </div>
               )}
@@ -1017,7 +1178,34 @@ export default function AIResumeEnhancer() {
             )}
           </div>
         )}
+        {showtoast === true ? (
+          <div
+            className="toast"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+          >
+            <div className="toast-header">
+              <img
+                src={favicon}
+                className="rounded me-2"
+                alt="AIResumeEnhancer"
+              />
+              <strong className="me-auto">AIResumeEnhancer</strong>
+              <small>Just Now</small>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="toast"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="toast-body">{message}</div>
+          </div>
+        ) : (
+          ""
+        )}
       </div>
-    </>
+    </section>
   );
 }

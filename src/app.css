@@ -5,7 +5,8 @@
   box-sizing: border-box;
   text-decoration: none !important;
   list-style: none !important;
-  scroll-behavior: smooth;
+  scroll-behavior: smooth !important;
+  transition: all 0.3s ease !important;
   font-family: "Jost", sans-serif;
 }
 /*--color codes--*/

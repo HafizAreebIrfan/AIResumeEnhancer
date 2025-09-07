@@ -359,26 +359,61 @@
   border: 1px solid #ef8354ff !important;
   border-radius: 5px;
 }
-.resumeenhancement{
-    padding: 30px 0 0 20px;
+.resumeenhancement,
+.interviewprep {
+  padding: 30px 0 0 20px;
 }
-.resumeenhancement h1{
-    font-size: 35px;
-    font-weight: 700;
-    color: #1c0118ff;
+.resumeenhancement h1,
+.interviewprep h1 {
+  font-size: 35px;
+  font-weight: 700;
+  color: #1c0118ff;
 }
-.resumeenhancement p{
-    font-size: 16px;
-    font-weight: 400;
-    color: #2d3142ff;
+.resumeenhancement p,
+.interviewprep p {
+  font-size: 16px;
+  font-weight: 400;
+  color: #2d3142ff;
 }
-.resumeenhancement .correctioncontent{
-    font-size: 16px;
-    font-weight: 400;
-    color: #2d3142ff;
+.resumeenhancement .correctioncontent {
+  font-size: 16px;
+  font-weight: 400;
+  color: #2d3142ff;
 }
-.resumeenhancement .correctioncontent span{
-    font-size: 18px;
-    font-weight: 500;
-    color: #1c0118ff;
+.resumeenhancement .correctioncontent span,
+.interviewprep span {
+  font-size: 18px;
+  font-weight: 500;
+  color: #1c0118ff;
+}
+
+@media only screen and (max-width: 1024px) {
+  .enhancerow, .enhanceboxrow {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 0px;
+    margin-block: 30px;
+  }
+  .responsecolright, .enhancecolright{
+    margin-top: 30px;
+  }
+}
+@media only screen and (max-width: 500px){
+    .enhancerow{
+        padding: 15px 10px;
+    }
+    .mainscore{
+        flex-wrap: wrap;
+    }
+    .mainscore .mainscorecols{
+        flex-basis: 100%;
+    }
+    .CircularProgressbar{
+        width: 30% !important;
+        margin-bottom: 50px !important;
+    }
+    .skills ol, .recommendedskills ol{
+        grid-template-columns: repeat(1, 1fr);
+        padding: 5px 0;
+    }
 }
