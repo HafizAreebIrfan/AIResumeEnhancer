@@ -386,34 +386,99 @@
   font-weight: 500;
   color: #1c0118ff;
 }
-
+.toast {
+  position: fixed;
+  top: 60px;
+  right: 30px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #d8d8d8;
+  padding: 15px;
+  z-index: 6;
+}
+.toastheader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #d8d8d8;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+.toastheader h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1c0118ff;
+  margin: 0 !important;
+  margin-right: 10px !important;
+}
+.toastheader .toastcancelicon {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1c0118ff;
+  cursor: pointer;
+  transition: 0.3s ease;
+  margin: 0 !important;
+}
+.toastheader .toastcancelicon:hover {
+  color: #ef8354ff;
+}
+.messagecontent p {
+  font-size: 16px;
+  font-weight: 400;
+  color: #ff0000;
+  margin: 0 !important;
+}
 @media only screen and (max-width: 1024px) {
-  .enhancerow, .enhanceboxrow {
+  .enhancerow,
+  .enhanceboxrow {
     display: grid;
     grid-template-columns: repeat(1, 1fr);
     gap: 0px;
     margin-block: 30px;
   }
-  .responsecolright, .enhancecolright{
+  .responsecolright,
+  .enhancecolright {
     margin-top: 30px;
   }
 }
-@media only screen and (max-width: 500px){
-    .enhancerow{
-        padding: 15px 10px;
-    }
-    .mainscore{
-        flex-wrap: wrap;
-    }
-    .mainscore .mainscorecols{
-        flex-basis: 100%;
-    }
-    .CircularProgressbar{
-        width: 30% !important;
-        margin-bottom: 50px !important;
-    }
-    .skills ol, .recommendedskills ol{
-        grid-template-columns: repeat(1, 1fr);
-        padding: 5px 0;
-    }
+@media only screen and (max-width: 500px) {
+  .enhancecolleft,.enhancecolright{
+    padding-right: 10px;
+  }
+  .enhancerow {
+    padding: 15px 10px;
+  }
+  .enhancebox{
+    margin-bottom: 10px;
+  }
+  .mainscore {
+    flex-wrap: wrap;
+  }
+  .mainscore .mainscorecols {
+    flex-basis: 100%;
+  }
+  .CircularProgressbar {
+    width: 30% !important;
+    margin-bottom: 50px !important;
+  }
+  .otherscores{
+    margin-top: 50px;
+  }
+  .skills ol,
+  .recommendedskills ol {
+    grid-template-columns: repeat(1, 1fr);
+    padding: 5px 0;
+  }
+  .interviewprepcontainer {
+    padding: 15px 10px;
+  }
+  .interviewprep,.resumeenhancement {
+    padding: 30px 0 0 10px;
+  }
+  .interviewprep h1,.resumeenhancement h1, .jobheading, .responsecolleft h1{
+    font-size: 24px;
+  }
+  .recommendedskills .emptylist {
+    padding: 5px;
+  }
 }

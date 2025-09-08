@@ -17,6 +17,7 @@ import { buildStyles, CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import Markdown from "react-markdown";
 import favicon from "../assets/favicon.png";
+import { ImCancelCircle } from "react-icons/im";
 
 const fileTypes = ["PDF"];
 
@@ -39,32 +40,6 @@ export default function AIResumeEnhancer() {
 
   const apikey = import.meta.env.VITE_API;
 
-  const handleChange = (file) => {
-    setFile(file);
-    const urlreader = new FileReader();
-    urlreader.onloadend = () => {
-      const base64string = urlreader.result;
-      setresumeurl(base64string);
-      localStorage.setItem("Saveresumeurl", base64string);
-    };
-    if (file) {
-      urlreader.readAsDataURL(file);
-    }
-  };
-  const handlejobChange = (jobdesc) => {
-    setjobdesc(jobdesc);
-    if (jobdesc !== null) {
-      const urlreader = new FileReader();
-      urlreader.onloadend = () => {
-        const base64string = urlreader.result;
-        setjobdescurl(base64string);
-        localStorage.setItem("Savejoburl", base64string);
-      };
-      if (jobdescurl) {
-        urlreader.readAsDataURL(jobdescurl);
-      }
-    }
-  };
   useEffect(() => {
     setskeletonloader(true);
     const retrieveresponse = localStorage.getItem("Saveresponse");
@@ -90,6 +65,35 @@ export default function AIResumeEnhancer() {
       setskeletonloader(false);
     }, 3500);
   }, []);
+
+  const handleChange = (file) => {
+    setFile(file);
+    const urlreader = new FileReader();
+    urlreader.onloadend = () => {
+      const base64string = urlreader.result;
+      setresumeurl(base64string);
+      localStorage.setItem("Saveresumeurl", base64string);
+    };
+    if (file) {
+      urlreader.readAsDataURL(file);
+    }
+  };
+  const handlejobChange = (jobdesc) => {
+    setjobdesc(jobdesc);
+    if (jobdesctext === "") {
+      console.log("joburl is proceed");
+      const urlreader = new FileReader();
+      urlreader.onloadend = () => {
+        const base64string = urlreader.result;
+        setjobdescurl(base64string);
+        localStorage.setItem("Savejoburl", base64string);
+      };
+      if (jobdesc) {
+        urlreader.readAsDataURL(jobdesc);
+      }
+    }
+  };
+
   const handlefileupload = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -105,6 +109,7 @@ export default function AIResumeEnhancer() {
     handleapiresponse(data);
   };
   const handleapiresponse = async (data) => {
+    console.log("api called");
     const ai = new GoogleGenAI({
       apiKey: apikey,
     });
@@ -240,15 +245,29 @@ export default function AIResumeEnhancer() {
     };
 
     try {
+      console.log("In try");
       setloader(true);
       const resume = localStorage.getItem("Saveresumeurl");
+      const jobdescriptionpdf = localStorage.getItem("Savejoburl");
       if (!resume) {
         setmessage("No resume file found in localStorage.");
         setshowtoast(true);
+        setTimeout(() => {
+          setshowtoast(false);
+        }, 3000);
         setloader(false);
         return;
       }
-      const prompt = `You are a senior technical recruiter for a leading tech company. Your task is to analyze the resume ${resume} and evaluate its suitability for the job role/job description provided. Here is job description/job role "${data.jobdesc}". Provide a professional, structured JSON object in following way:
+      if (!jobdescriptionpdf) {
+        setmessage("No job description file found in localStorage.");
+        setshowtoast(true);
+        setTimeout(() => {
+          setshowtoast(false);
+        }, 3000);
+        setloader(false);
+        return;
+      }
+      const prompt = `You are a senior technical recruiter for a leading tech company. Your task is to analyze the resume ${resume} and evaluate its suitability for the job role/job description provided. Here is job description/job role text or pdf "${data.jobdesc} ${jobdescriptionpdf}". Provide a professional, structured JSON object in following way:
      type: "OBJECT",
       properties: {
         candidatedetails: {
@@ -372,6 +391,12 @@ export default function AIResumeEnhancer() {
                 data: resume.split(",")[1],
               },
             },
+            {
+              inlineData: {
+                mimeType: "application/pdf",
+                data: jobdescriptionpdf.split(",")[1],
+              },
+            },
           ],
         },
         generationConfig: {
@@ -392,6 +417,9 @@ export default function AIResumeEnhancer() {
             } else {
               setmessage("failed to generate response.");
               setshowtoast(true);
+              setTimeout(() => {
+                setshowtoast(false);
+              }, 3000);
             }
           }
         } catch (e) {
@@ -400,10 +428,16 @@ export default function AIResumeEnhancer() {
       } else {
         setmessage("No text found in the API response.");
         setshowtoast(true);
+        setTimeout(() => {
+          setshowtoast(false);
+        }, 3000);
       }
     } catch (e) {
       setmessage(`No API response. ${e}`);
       setshowtoast(true);
+      setTimeout(() => {
+        setshowtoast(false);
+      }, 3000);
     } finally {
       setloader(false);
     }
@@ -415,16 +449,23 @@ export default function AIResumeEnhancer() {
     if (index === 3 && !retrieveinterviewquestions) {
       settabindex(3);
       setinterviewbar(false);
-      setmessage("interview api called after clicking on interview bar.");
-      setshowtoast(true);
       const ai = new GoogleGenAI({
         apiKey: apikey,
       });
       try {
         setintreviewloader(true);
         const resumepdf = localStorage.getItem("Saveresumeurl");
-        const jobpdf = localStorage.getItem("Savejobdesc");
+        const jobdescriptionpdf = localStorage.getItem("Savejoburl");
         const jobtext = localStorage.getItem("Savejobdesc");
+        if (!jobdescriptionpdf) {
+          setmessage("No job description file found in localStorage.");
+          setshowtoast(true);
+          setTimeout(() => {
+            setshowtoast(false);
+          }, 3000);
+          setloader(false);
+          return;
+        }
         const interviewSchema = {
           type: "OBJECT",
           properties: {
@@ -434,7 +475,7 @@ export default function AIResumeEnhancer() {
             },
           },
         };
-        const interviewprompt = `You are a senior technical recruiter for a leading tech company. Your task is to ask interview questions according to the job role/job description he provided. Here it is ${jobtext}. Also ask some questions according to his/her ${resumepdf}. Provide a professional, structured JSON object in following way:
+        const interviewprompt = `You are a senior technical recruiter for a leading tech company. Your task is to ask interview questions. Ask questions about candidate resume ${resumepdf} and job description text/pdf he provided ${jobdescriptionpdf} OR ${jobtext} Provide a professional, structured interview questions in JSON object with all questions in a single array and in following way:
      type: "OBJECT",
       properties: {
         interviewquestions: {
@@ -447,12 +488,18 @@ export default function AIResumeEnhancer() {
           contents: {
             parts: [
               {
-                text: `${interviewprompt}\n\nResume:\n${resumepdf}\n\nJob Role/Desc:\n${jobtext}`,
+                text: `${interviewprompt}\n\nResume:\n${resumepdf}`,
               },
               {
                 inlineData: {
                   mimeType: "application/pdf",
                   data: resumepdf.split(",")[1],
+                },
+              },
+              {
+                inlineData: {
+                  mimeType: "application/pdf",
+                  data: jobdescriptionpdf.split(",")[1],
                 },
               },
             ],
@@ -475,25 +522,35 @@ export default function AIResumeEnhancer() {
               } else {
                 setmessage("Failed to generate response.");
                 setshowtoast(true);
+                setTimeout(() => {
+                  setshowtoast(false);
+                }, 3000);
               }
             }
           } catch (e) {
             setmessage(`API Error ${e}`);
             setshowtoast(true);
+            setTimeout(() => {
+              setshowtoast(false);
+            }, 3000);
           }
         } else {
           setmessage("No text found in the API response.");
           setshowtoast(true);
+          setTimeout(() => {
+            setshowtoast(false);
+          }, 3000);
         }
       } catch (e) {
         setmessage(`API Error ${e}`);
         setshowtoast(true);
+        setTimeout(() => {
+          setshowtoast(false);
+        }, 3000);
       } finally {
         setintreviewloader(false);
       }
     } else {
-      setmessage("Api not called while clicking on tabs.");
-      setshowtoast(true);
       settabindex(index);
       setskeletonloader(false);
     }
@@ -932,20 +989,20 @@ export default function AIResumeEnhancer() {
                         (corrections, index) => (
                           <div key={index}>
                             <p className={`${styles.correctioncontent}`}>
-                              <span>{corrections.Section} Section:</span>{" "}
-                              {corrections.Item}
+                              <span>{corrections.Section ? corrections.Section : corrections.section} Section:</span>{" "}
+                              {corrections.Item ? corrections.Item : corrections.item}
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>What to replace:</span>{" "}
                               {corrections.Original
                                 ? corrections.Original
-                                : "null"}
+                                : corrections.original ? corrections.original : "null"}
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>Replace with(Suggestion):</span>{" "}
                               {corrections.Correction
                                 ? corrections.Correction
-                                : "No suggestion. Keep the original one."}
+                                : corrections.correction ? corrections.correction : "No suggestion. Keep the original one."}
                             </p>
                           </div>
                         )
@@ -961,7 +1018,7 @@ export default function AIResumeEnhancer() {
                           />
                         ) : (
                           <>
-                            {interviewquestions.interviewquestions.map(
+                            {interviewquestions.properties.interviewquestions.map(
                               (question, index) => {
                                 return (
                                   <div key={index}>
@@ -1108,7 +1165,7 @@ export default function AIResumeEnhancer() {
                                   multiple={false}
                                   handleChange={handleChange}
                                   required
-                                  name="jobfile"
+                                  name="file"
                                   types={fileTypes}
                                 />
                               </div>
@@ -1128,7 +1185,7 @@ export default function AIResumeEnhancer() {
                             <FileUploader
                               multiple={false}
                               handleChange={handlejobChange}
-                              name="file"
+                              name="jobfile"
                               types={fileTypes}
                               classes={`${
                                 emptyjderror === true
@@ -1179,28 +1236,17 @@ export default function AIResumeEnhancer() {
           </div>
         )}
         {showtoast === true ? (
-          <div
-            className="toast"
-            role="alert"
-            aria-live="assertive"
-            aria-atomic="true"
-          >
-            <div className="toast-header">
-              <img
-                src={favicon}
-                className="rounded me-2"
-                alt="AIResumeEnhancer"
+          <div className={`${styles.toast}`}>
+            <div className={`${styles.toastheader}`}>
+              <h4>AIResumeEnhancer</h4>
+              <ImCancelCircle
+                onClick={() => setshowtoast(false)}
+                className={`${styles.toastcancelicon}`}
               />
-              <strong className="me-auto">AIResumeEnhancer</strong>
-              <small>Just Now</small>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="toast"
-                aria-label="Close"
-              ></button>
             </div>
-            <div className="toast-body">{message}</div>
+            <div className={`${styles.messagecontent}`}>
+              <p>{message}</p>
+            </div>
           </div>
         ) : (
           ""
