@@ -251,6 +251,7 @@ export default function AIResumeEnhancer() {
       setloader(true);
       const resume = localStorage.getItem("Saveresumeurl");
       const jobdescriptionpdf = localStorage.getItem("Savejoburl");
+    const retrievejobdesc = localStorage.getItem("Savejobdesc");
       if (!resume) {
         setmessage("No resume file found in localStorage.");
         setshowtoast(true);
@@ -260,8 +261,8 @@ export default function AIResumeEnhancer() {
         setloader(false);
         return;
       }
-      if (!jobdescriptionpdf) {
-        setmessage("No job description file found in localStorage.");
+      if (!jobdescriptionpdf && retrievejobdesc === "") {
+        setmessage("No job description file or text found in localStorage.");
         setshowtoast(true);
         setTimeout(() => {
           setshowtoast(false);
