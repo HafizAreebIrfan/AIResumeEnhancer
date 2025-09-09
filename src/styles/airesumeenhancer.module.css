@@ -440,6 +440,10 @@
   .enhancecolright {
     margin-top: 30px;
   }
+  .enhancebox{
+    justify-content: start;
+    margin-bottom: 10px;
+  }
 }
 @media only screen and (max-width: 500px) {
   .enhancecolleft,.enhancecolright{
@@ -480,5 +484,13 @@
   }
   .recommendedskills .emptylist {
     padding: 5px;
+  }
+}
+@media only screen and (max-width: 400px){
+  .uploadarea h1{
+    font-size: 24px;
+  }
+  .uploadarea p{
+    font-size: 15px;
   }
 }
