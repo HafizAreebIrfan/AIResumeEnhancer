@@ -51,6 +51,8 @@ export default function AIResumeEnhancer() {
     );
     const converttoobject = JSON.parse(retrieveresponse);
     const convertinterviewtoobject = JSON.parse(retrieveinterviewquestions);
+    setshowtoast(true);
+    setmessage(`No file uploadoad, ${file}`);
     if (converttoobject) {
       setresumeurl(retrieveresumeurl);
       setjobdesctext(retrievejobdesc);
@@ -68,6 +70,7 @@ export default function AIResumeEnhancer() {
 
   const handleChange = (file) => {
     setFile(file);
+    setmessage(`file uploaded ${file.name}`)
     const urlreader = new FileReader();
     urlreader.onloadend = () => {
       const base64string = urlreader.result;
@@ -93,7 +96,6 @@ export default function AIResumeEnhancer() {
       }
     }
   };
-
   const handlefileupload = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -593,7 +595,7 @@ export default function AIResumeEnhancer() {
               </>
             )}
 
-            <div className={`${styles.enhancerow}`}>
+            <div className={`${styles.responserow}`}>
               {skeletonloader || !airesponse ? (
                 <Skeleton style={{ marginTop: "20px" }} count={50.5} />
               ) : (
@@ -989,20 +991,31 @@ export default function AIResumeEnhancer() {
                         (corrections, index) => (
                           <div key={index}>
                             <p className={`${styles.correctioncontent}`}>
-                              <span>{corrections.Section ? corrections.Section : corrections.section} Section:</span>{" "}
-                              {corrections.Item ? corrections.Item : corrections.item}
+                              <span>
+                                {corrections.Section
+                                  ? corrections.Section
+                                  : corrections.section}{" "}
+                                Section:
+                              </span>{" "}
+                              {corrections.Item
+                                ? corrections.Item
+                                : corrections.item}
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>What to replace:</span>{" "}
                               {corrections.Original
                                 ? corrections.Original
-                                : corrections.original ? corrections.original : "null"}
+                                : corrections.original
+                                ? corrections.original
+                                : "null"}
                             </p>
                             <p className={`${styles.correctioncontent}`}>
                               <span>Replace with(Suggestion):</span>{" "}
                               {corrections.Correction
                                 ? corrections.Correction
-                                : corrections.correction ? corrections.correction : "No suggestion. Keep the original one."}
+                                : corrections.correction
+                                ? corrections.correction
+                                : "No suggestion. Keep the original one."}
                             </p>
                           </div>
                         )

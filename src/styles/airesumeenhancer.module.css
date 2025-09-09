@@ -7,13 +7,25 @@
   height: 100vh;
   margin-bottom: 50px;
 }
-.enhancerow {
+.responserow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   padding: 15px 30px;
   height: 100vh;
   overflow-y: auto;
+}
+.enhancerow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 15px 30px;
+}
+.enhancecolleft,
+.enhancecolright {
+  flex-basis: 50%;
+  padding-right: 20px;
 }
 .enhancecolleft h1 {
   font-size: 26px;
@@ -33,14 +45,14 @@
 .enhanceboxrow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  margin-top: 30px;
+  gap: 10px;
 }
 .enhancebox {
   padding: 10px;
   border: 1px solid #d8d8d8;
   border-radius: 10px;
   transition: 0.3s ease;
+  margin-bottom: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -440,19 +452,20 @@
   .enhancecolright {
     margin-top: 30px;
   }
-  .enhancebox{
+  .enhancebox {
     justify-content: start;
     margin-bottom: 10px;
   }
 }
 @media only screen and (max-width: 500px) {
-  .enhancecolleft,.enhancecolright{
+  .enhancecolleft,
+  .enhancecolright {
     padding-right: 10px;
   }
   .enhancerow {
     padding: 15px 10px;
   }
-  .enhancebox{
+  .enhancebox {
     margin-bottom: 10px;
   }
   .mainscore {
@@ -465,7 +478,7 @@
     width: 30% !important;
     margin-bottom: 50px !important;
   }
-  .otherscores{
+  .otherscores {
     margin-top: 50px;
   }
   .skills ol,
@@ -476,21 +489,31 @@
   .interviewprepcontainer {
     padding: 15px 10px;
   }
-  .interviewprep,.resumeenhancement {
+  .interviewprep,
+  .resumeenhancement {
     padding: 30px 0 0 10px;
   }
-  .interviewprep h1,.resumeenhancement h1, .jobheading, .responsecolleft h1{
+  .interviewprep h1,
+  .resumeenhancement h1,
+  .jobheading,
+  .responsecolleft h1 {
     font-size: 24px;
   }
   .recommendedskills .emptylist {
     padding: 5px;
   }
 }
-@media only screen and (max-width: 400px){
-  .uploadarea h1{
+@media only screen and (max-width: 400px) {
+  .uploadarea h1 {
     font-size: 24px;
   }
-  .uploadarea p{
+  .uploadarea p {
     font-size: 15px;
+  }
+  .uploadbox label {
+    max-width: 0px !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0px 10px !important;
   }
 }
