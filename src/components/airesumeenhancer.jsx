@@ -26,8 +26,6 @@ import {
 } from "@uploadcare/react-uploader";
 import "@uploadcare/react-uploader/core.css";
 
-const fileTypes = ["PDF"];
-
 export default function AIResumeEnhancer() {
   const [airesponse, setairesponse] = useState("");
   const [emptyjderror, setemptyjderror] = useState(false);
@@ -49,6 +47,7 @@ export default function AIResumeEnhancer() {
     apiKey: modelapikey,
     dangerouslyAllowBrowser: true,
   });
+  
 
   useEffect(() => {
     setskeletonloader(true);
@@ -795,7 +794,7 @@ export default function AIResumeEnhancer() {
                       ></iframe>
                     </TabPanel>
                     <TabPanel style={{ marginTop: "30px", marginLeft: "30px" }}>
-                      {jobdescurl === "" ? (
+                      {!jobdesctext ? (
                         <>
                           <h1 className={`${styles.jobheading}`}>
                             Job Description:{" "}
@@ -877,7 +876,7 @@ export default function AIResumeEnhancer() {
                                     key={index}
                                   >
                                     <span style={{ marginRight: "10px" }}>
-                                      Q{index = index +1} 
+                                      Q{(index = index + 1)}
                                     </span>
                                     <Markdown>{question}</Markdown>
                                   </div>
