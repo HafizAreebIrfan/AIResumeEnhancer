@@ -18,12 +18,17 @@ import "react-circular-progressbar/dist/styles.css";
 import Markdown from "react-markdown";
 import favicon from "../assets/favicon.png";
 import { ImCancelCircle } from "react-icons/im";
+import OpenAI from "openai";
+import fs from "fs";
+import {
+  FileUploaderRegular,
+  FileUploaderMinimal,
+} from "@uploadcare/react-uploader";
+import "@uploadcare/react-uploader/core.css";
 
 const fileTypes = ["PDF"];
 
 export default function AIResumeEnhancer() {
-  const [file, setFile] = useState(null);
-  const [jobdesc, setjobdesc] = useState(null);
   const [airesponse, setairesponse] = useState("");
   const [emptyjderror, setemptyjderror] = useState(false);
   const [loader, setloader] = useState(false);
@@ -38,25 +43,28 @@ export default function AIResumeEnhancer() {
   const [showtoast, setshowtoast] = useState(false);
   const [message, setmessage] = useState("");
 
-  const apikey = import.meta.env.VITE_API;
+  const modelapikey = import.meta.env.VITE_API;
+  const fileuploaderapikey = import.meta.env.VITE_UPLOADER;
+  const client = new OpenAI({
+    apiKey: modelapikey,
+    dangerouslyAllowBrowser: true,
+  });
 
   useEffect(() => {
     setskeletonloader(true);
     const retrieveresponse = localStorage.getItem("Saveresponse");
-    const retrieveresumeurl = localStorage.getItem("Saveresumeurl");
-    const retrievejobdesc = localStorage.getItem("Savejobdesc");
-    const retrievejoburl = localStorage.getItem("Savejoburl");
+    const getresumeurl = localStorage.getItem("Saveresumeurl");
+    const getjoburl = localStorage.getItem("Savejoburl");
+    const getjobdesc = localStorage.getItem("Savejobdesc");
     const retrieveinterviewquestions = localStorage.getItem(
       "Saveinterviewquestions"
     );
     const converttoobject = JSON.parse(retrieveresponse);
     const convertinterviewtoobject = JSON.parse(retrieveinterviewquestions);
-    setshowtoast(true);
-    setmessage(`No file uploadoad, ${file}`);
     if (converttoobject) {
-      setresumeurl(retrieveresumeurl);
-      setjobdesctext(retrievejobdesc);
-      setjobdescurl(retrievejoburl);
+      setresumeurl(getresumeurl);
+      setjobdesctext(getjobdesc);
+      setjobdescurl(getjoburl);
       setairesponse(converttoobject);
     }
     if (convertinterviewtoobject) {
@@ -67,33 +75,30 @@ export default function AIResumeEnhancer() {
       setskeletonloader(false);
     }, 3500);
   }, []);
-
-  const handleChange = (file) => {
-    setFile(file);
-    setmessage(`file uploaded ${file.name}`)
-    const urlreader = new FileReader();
-    urlreader.onloadend = () => {
-      const base64string = urlreader.result;
-      setresumeurl(base64string);
-      localStorage.setItem("Saveresumeurl", base64string);
-    };
-    if (file) {
-      urlreader.readAsDataURL(file);
+  const handleresumeuploader = (e) => {
+    if (e.fileInfo.mimeType !== "application/pdf") {
+      setshowtoast(true);
+      setmessage("Only PDF are allowed");
+      setTimeout(() => {
+        setshowtoast(false);
+      }, 3000);
+      return;
+    } else {
+      setresumeurl(e.fileInfo.cdnUrl);
+      localStorage.setItem("Saveresumeurl", e.fileInfo.cdnUrl);
     }
   };
-  const handlejobChange = (jobdesc) => {
-    setjobdesc(jobdesc);
-    if (jobdesctext === "") {
-      console.log("joburl is proceed");
-      const urlreader = new FileReader();
-      urlreader.onloadend = () => {
-        const base64string = urlreader.result;
-        setjobdescurl(base64string);
-        localStorage.setItem("Savejoburl", base64string);
-      };
-      if (jobdesc) {
-        urlreader.readAsDataURL(jobdesc);
-      }
+  const handlejobuploader = (e) => {
+    if (e.fileInfo.mimeType !== "application/pdf") {
+      setshowtoast(true);
+      setmessage("Only PDF are allowed");
+      setTimeout(() => {
+        setshowtoast(false);
+      }, 3000);
+      return;
+    } else {
+      setjobdescurl(e.fileInfo.cdnUrl);
+      localStorage.setItem("Savejoburl", e.fileInfo.cdnUrl);
     }
   };
   const handlefileupload = (e) => {
@@ -102,158 +107,49 @@ export default function AIResumeEnhancer() {
     const data = Object.fromEntries(formData.entries());
     setjobdesctext(data.jobdesc);
     localStorage.setItem("Savejobdesc", data.jobdesc);
-    if (file === null) {
+    const getresumeurl = localStorage.getItem("Saveresumeurl");
+    const getjoburl = localStorage.getItem("Savejoburl");
+    const getjobdesc = localStorage.getItem("Savejobdesc");
+    if (getresumeurl === null) {
+      setshowtoast(true);
+      setmessage("Upload resume please...");
+      localStorage.removeItem("Savejobdesc");
+      setjobdesctext("");
+      setTimeout(() => {
+        setshowtoast(false);
+      }, 3000);
       return;
-    } else if (jobdesc === null && data.jobdesc === "") {
+    } else if (getjoburl === null && getjobdesc === "") {
       setemptyjderror(true);
+      setshowtoast(true);
+      setmessage("Upload or write job description please...");
+      localStorage.removeItem("Savejobdesc");
+      localStorage.removeItem("Savejoburl");
+      setjobdescurl("");
+      setjobdesctext("");
+      setTimeout(() => {
+        setshowtoast(false);
+      }, 3000);
       return;
     }
-    handleapiresponse(data);
+    if (getjoburl && getjobdesc) {
+      setshowtoast(true);
+      setmessage("You cannot upload two job descriptions at same time.");
+      localStorage.removeItem("Savejobdesc");
+      setjobdesctext("");
+      setTimeout(() => {
+        setshowtoast(false);
+      }, 3000);
+      return;
+    } else {
+      handleapiresponse(getresumeurl, getjoburl, getjobdesc);
+    }
   };
-  const handleapiresponse = async (data) => {
-    console.log("api called");
-    const ai = new GoogleGenAI({
-      apiKey: apikey,
-    });
-    const resumeSchema = {
-      type: "OBJECT",
-      properties: {
-        candidatedetails: {
-          type: "OBJECT",
-          description:
-            "Provide candidate name, email, phoneno, city, country if available. If not then judge from city name, and other social links if available.",
-          properties: {
-            name: { type: "STRING" },
-            email: { type: "STRING" },
-            phoneno: { type: "STRING" },
-            city: { type: "STRING" },
-            country: { type: "STRING" },
-            linkedin: { type: "STRING" },
-            github: { type: "STRING" },
-            website: { type: "STRING" },
-          },
-        },
-        summary: {
-          type: "STRING",
-          description:
-            "A detailed professional summary of the candidate's resume, limited to the provided text. Do not include any match scores or analysis points here. Just the summary.",
-        },
-        matchScore: {
-          type: "OBJECT",
-          properties: {
-            overall: {
-              type: "NUMBER",
-              description:
-                "An overall match score of candidate resume according to job description/title provided and avg subscores %, out of 100%.",
-            },
-            subscores: {
-              type: "OBJECT",
-              description:
-                "Individual sub-scores out of 100% for specific resume qualities. Also Give small descriptions for each",
-              properties: {
-                clarity: {
-                  type: "OBJECT",
-                  description:
-                    "Provide short description of how much clarity is in resume according to ats format, job description, and overall structure in resume.",
-                  properties: {
-                    clarityscore: { type: "NUMBER" },
-                    claritydescription: { type: "STRING" },
-                  },
-                },
-                grammar: {
-                  type: "OBJECT",
-                  description:
-                    "Provide short description of grammar. Highlight how good grammar is used and highlight mistakes.",
-                  properties: {
-                    grammarscore: { type: "NUMBER" },
-                    grammardescription: { type: "STRING" },
-                  },
-                },
-                sections: {
-                  type: "OBJECT",
-                  description:
-                    "Provide short description of sections. Highlight how good sections is used and highlight mistakes.",
-                  properties: {
-                    sectionsscore: { type: "NUMBER" },
-                    sectionsdescription: { type: "STRING" },
-                  },
-                },
-                impact: {
-                  type: "OBJECT",
-                  description:
-                    "Provide short description of impact. Highlight how resume impact according to job description. Highlight mistakes if any.",
-                  properties: {
-                    impactscore: { type: "NUMBER" },
-                    impactdescription: { type: "STRING" },
-                  },
-                },
-              },
-            },
-          },
-        },
-        atsFormat: {
-          type: "OBJECT",
-          properties: {
-            isAtsFriendly: {
-              type: "STRING",
-              description:
-                "Yes, if the resume is ATS friendly then show All good, just keep learning, otherwise No, and give suggestion to make resume more ATS friendly by highlighting specific place where changes should be done.",
-            },
-            suggestions: {
-              type: "ARRAY",
-              description:
-                "If resume is not ATS friendly then highlight a list of actionable suggestions to make the resume more ATS friendly. If resume is ATS friendly then show, No suggestions, keep learning in suggestions.",
-              items: { type: "STRING" },
-            },
-          },
-        },
-        technicalSkills: {
-          type: "OBJECT",
-          properties: {
-            listedSkills: { type: "ARRAY", items: { type: "STRING" } },
-            suggestedSkills: {
-              type: "ARRAY",
-              items: { type: "STRING" },
-              description:
-                "If candidate resume has all recommended skills then show You have showcased all required skills. If not, then highlight missing recommended skills.",
-            },
-          },
-        },
-        detailedAnalysis: {
-          type: "OBJECT",
-          properties: {
-            strengths: { type: "ARRAY", items: { type: "STRING" } },
-            areasForImprovement: {
-              type: "ARRAY",
-              items: { type: "STRING" },
-              description:
-                "Strictly Point out where changes should be made according to Job role or description given like Grammar mistakes, Incorrect words, Action Verbs, etc. If all good then show Nothing to improve, just keep learning.",
-            },
-          },
-        },
-        enhancedresume: {
-          type: "OBJECT",
-          description:
-            "Rewrite candidate resume with the changes and suggestion you suggest either for atsformat, skills, weaknesses. Your respose should be in JSON and every details should be in different Arrays and with proper name like (Section, Item, Original, Correction).",
-          properties: {
-            corrections: {
-              type: "ARRAY",
-              description:
-                "Show all corrections in each array with proper name like Section, Item, Original, and Correction. And place where the correction has to be made.",
-            },
-          },
-        },
-      },
-    };
-
+  const handleapiresponse = async (getresumeurl, getjoburl, getjobdesc) => {
     try {
-      console.log("In try");
       setloader(true);
-      const resume = localStorage.getItem("Saveresumeurl");
-      const jobdescriptionpdf = localStorage.getItem("Savejoburl");
-    const retrievejobdesc = localStorage.getItem("Savejobdesc");
-      if (!resume) {
-        setmessage("No resume file found in localStorage.");
+      if (!getresumeurl) {
+        setmessage("No resume text found in localStorage.");
         setshowtoast(true);
         setTimeout(() => {
           setshowtoast(false);
@@ -261,8 +157,8 @@ export default function AIResumeEnhancer() {
         setloader(false);
         return;
       }
-      if (!jobdescriptionpdf && retrievejobdesc === "") {
-        setmessage("No job description file or text found in localStorage.");
+      if (!getjoburl && getjobdesc === "") {
+        setmessage("No job description text found in localStorage.");
         setshowtoast(true);
         setTimeout(() => {
           setshowtoast(false);
@@ -270,160 +166,112 @@ export default function AIResumeEnhancer() {
         setloader(false);
         return;
       }
-      const prompt = `You are a senior technical recruiter for a leading tech company. Your task is to analyze the resume ${resume} and evaluate its suitability for the job role/job description provided. Here is job description/job role text or pdf "${data.jobdesc} ${jobdescriptionpdf}". Provide a professional, structured JSON object in following way:
-     type: "OBJECT",
-      properties: {
-        candidatedetails: {
-        type: "OBJECT",
-        description: "Provide candidate name, email, phoneno, city, country if available. If not then judge from city name, and other social links if available.",
-        properties:{
-        name: {type: STRING},
-        email: {type: STRING},
-        phoneno: {type: STRING},
-        city: {type: STRING},
-        country: {type: STRING},
-        linkedin: {type: STRING},
-        github: {type: STRING},
-        website: {type: STRING},
-        }
-        },
-        summary: {
-          type: "STRING",
-          description:
-            "A detailed professional summary of the candidate's resume, limited to the provided text. Do not include any match scores or analysis points here. Just the summary.",
-        },
-        matchScore: {
-          type: "OBJECT",
-          properties: {
-            overall: {
-              type: "NUMBER",
-              description:
-                "An overall match score of candidate resume according to job description/title provided and avg subscores %, out of 100%.",
-            },
-            subscores: {
-              type: "OBJECT",
-              description:
-                "Individual sub-scores out of 100% for specific resume qualities. Also Give small descriptions for each",
-              properties: {
-                clarity: { 
-                type: "OBJECT", 
-                description: 
-                "Provide short description of how much clarity is in resume according to ats format, job description, and overall structure in resume.",
-                properties:{
-                clarityscore: {type: NUMBER},
-                claritydescription: {type: STRING},
-                }, 
-                },
-                grammar: { 
-                type: "OBJECT",
-                description: "Provide short description of grammar. Highlight how good grammar is used and highlight mistakes.",
-                properties:{
-                grammarscore: {type: NUMBER},
-                grammardescription: {type: STRING},
-                }, 
-                },
-                sections: { type: "OBJECT",
-                description: "Provide short description of sections. Highlight how good sections is used and highlight mistakes.",
-                properties:{
-                sectionsscore: {type: NUMBER},
-                sectionsdescription: {type: STRING},
-                }, 
-                },
-                impact: { type: "OBJECT",
-                description: "Provide short description of impact. Highlight how resume impact according to job description. Highlight mistakes if any.",
-                properties:{
-                impactscore: {type: NUMBER},
-                impactdescription: {type: STRING},
-                }, 
-                },
-              },
-            },
-          },
-        },
-        atsFormat: {
-          type: "OBJECT",
-          properties: {
-            isAtsFriendly: {
-              type: "STRING",
-              description:
-                "Yes, if the resume is ATS friendly then show All good, just keep learning, otherwise No, and give suggestion to make resume more ATS friendly by highlighting specific place where changes should be done.",
-            },
-            suggestions: {
-              type: "ARRAY",
-              description:
-                "If resume is not ATS friendly then highlight a list of actionable suggestions to make the resume more ATS friendly. If resume is ATS friendly then show, No suggestions, keep learning in suggestions.",
-              items: { type: "STRING" },
-            },
-          },
-        },
-        technicalSkills: {
-          type: "OBJECT",
-          properties: {
-            listedSkills: { type: "ARRAY", items: { type: "STRING" } },
-            suggestedSkills: { type: "ARRAY", items: { type: "STRING" }, description: "If candidate resume has all recommended skills then show You have showcased all required skills. If not, then highlight missing recommended skills." },
-          },
-        },
-        detailedAnalysis: {
-          type: "OBJECT",
-          properties: {
-            strengths: { type: "ARRAY", items: { type: "STRING" } },
-            areasForImprovement: { type: "ARRAY", items: { type: "STRING" }, description: "Strictly Point out where changes should be made according to Job role or description given like Grammar mistakes, Incorrect words, Action Verbs, etc. If all good then show Nothing to improve, just keep learning." },
-          },
-        },
-        enhancedresume: {
-          type: "OBJECT",
-          description:
-            "Rewrite candidate resume with the changes and suggestion you suggest either for atsformat, skills, weaknesses. Your respose should be in JSON and every details should be in different Arrays and with proper name like (Section, Item, Original, Correction).",
-          properties: {
-            corrections: {
-              type: "ARRAY",
-              description: "Show all corrections in each array with proper name and place where the correction has to be made."
-            },
-          },
-        },
+
+      const prompt = `
+    You are a senior technical recruiter for a leading tech company.
+    Your task is to analyze the resume and job description, then return ONLY a valid JSON object.
+    Output JSON structure (strictly follow this shape, fill with actual values):
+    {
+      "candidatedetails": {
+        "name": "string",
+        "email": "string",
+        "phoneno": "string",
+        "city": "string",
+        "country": "string",
+        "linkedin": "string",
+        "github": "string",
+        "website": "string"
       },
+      "summary": "string",
+      "matchScore": {
+        "overall": number,
+        "subscores": {
+          "clarity": { "score": number, "description": "string" },
+          "grammar": { "score": number, "description": "string" },
+          "sections": { "score": number, "description": "string" },
+          "impact": { "score": number, "description": "string" }
+        }
+      },
+      "atsFormat": {
+        "isAtsFriendly": "Yes/No",
+        "suggestions": ["string"]
+      },
+      "technicalSkills": {
+        "listedSkills": ["string"],
+        "suggestedSkills": ["string"]
+      },
+      "detailedAnalysis": {
+        "strengths": ["string"],
+        "areasForImprovement": ["string"]
+      },
+      "enhancedresume": {
+        "corrections": [
+          {
+            "section": "string",
+            "item": "string",
+            "original": "string",
+            "correction": "string"
+          }
+        ]
+      }
+    }
+    Rules:
+    - Don't be strict in ATS friendly yes/no. If its very much necessary for job application then give NO, otherwise yes, with necessary suggestions.
+    - Scores should be from out of 100.
+    - Focus mainly on **relevance to the job description** when giving scores and feedback.
+    - Highlight only **important strengths and weaknesses** that affect job fit; ignore trivial grammar/formatting issues unless they seriously harm clarity.
+    - ATS suggestions should be **practical and minimal**, not overly strict.
+    - Suggested skills should only include **key missing skills from the job description**, not every possible tech skill.
+    - Keep tone professional, concise, and recruiter-like.
+    - Do NOT include explanations, markdown, or text outside of the JSON.
+    - Output must be strictly valid JSON.
     `;
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
-        contents: {
-          parts: [
-            { text: `${prompt}\n\nResume:\n${resume}` },
-            {
-              inlineData: {
-                mimeType: "application/pdf",
-                data: resume.split(",")[1],
+      const jobdescription = getjoburl ? getjoburl : getjobdesc;
+      const inputtype = getjoburl ? "input_file" : "input_text";
+      const jobcontent =
+        inputtype === "input_file"
+          ? {
+              type: "input_file",
+              file_url: jobdescription,
+            }
+          : {
+              type: "input_text",
+              text: jobdescription,
+            };
+      const response = await client.responses.create({
+        model: "gpt-5-2025-08-07",
+
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: prompt,
               },
-            },
-            {
-              inlineData: {
-                mimeType: "application/pdf",
-                data: jobdescriptionpdf.split(",")[1],
+              {
+                type: "input_file",
+                file_url: getresumeurl,
               },
-            },
-          ],
-        },
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: resumeSchema,
-        },
+              jobcontent,
+            ],
+          },
+        ],
+        reasoning: { effort: "medium" },
       });
       if (response) {
-        const parseddata = response.candidates[0].content.parts[0].text;
+        const parseresponse = JSON.parse(response.output[1].content[0].text);
         try {
-          const extracttext = parseddata.match(/({[\s\S]*})/);
-          if (extracttext && extracttext[1]) {
-            const parsedanalysis = JSON.parse(extracttext[1]);
-            if (parsedanalysis) {
-              setairesponse(parsedanalysis);
-              const converttostring = JSON.stringify(parsedanalysis);
-              localStorage.setItem("Saveresponse", converttostring);
-            } else {
-              setmessage("failed to generate response.");
-              setshowtoast(true);
-              setTimeout(() => {
-                setshowtoast(false);
-              }, 3000);
-            }
+          if (parseresponse) {
+            setairesponse(parseresponse);
+            const converttostring = JSON.stringify(parseresponse);
+            localStorage.setItem("Saveresponse", converttostring);
+          } else {
+            setmessage("failed to generate response.");
+            setshowtoast(true);
+            setTimeout(() => {
+              setshowtoast(false);
+            }, 3000);
           }
         } catch (e) {
           console.log(e);
@@ -452,16 +300,13 @@ export default function AIResumeEnhancer() {
     if (index === 3 && !retrieveinterviewquestions) {
       settabindex(3);
       setinterviewbar(false);
-      const ai = new GoogleGenAI({
-        apiKey: apikey,
-      });
       try {
         setintreviewloader(true);
-        const resumepdf = localStorage.getItem("Saveresumeurl");
-        const jobdescriptionpdf = localStorage.getItem("Savejoburl");
-        const jobtext = localStorage.getItem("Savejobdesc");
-        if (!jobdescriptionpdf) {
-          setmessage("No job description file found in localStorage.");
+        const getresumeurl = localStorage.getItem("Saveresumeurl");
+        const getjoburl = localStorage.getItem("Savejoburl");
+        const getjobdesc = localStorage.getItem("Savejobdesc");
+        if (getjoburl === null && getjobdesc === "") {
+          setmessage("No job description text found in localStorage.");
           setshowtoast(true);
           setTimeout(() => {
             setshowtoast(false);
@@ -469,66 +314,68 @@ export default function AIResumeEnhancer() {
           setloader(false);
           return;
         }
-        const interviewSchema = {
-          type: "OBJECT",
-          properties: {
-            interviewquestions: {
-              type: "ARRAY",
-              items: { type: "STRING" },
+        const interviewprompt = `You are a senior technical recruiter for a leading tech company. 
+        Your task is to ask interview questions according to job description and candidate resume. 
+        Questions must be legit, scenario based, skill based according to resume and job description requirement. 
+        Return only valid JSON object
+        Output JSON structure (strictly follow this shape, fill with actual values):
+            {
+              interviewquestions: {
+                questions: "Array",
+              },
             },
-          },
-        };
-        const interviewprompt = `You are a senior technical recruiter for a leading tech company. Your task is to ask interview questions. Ask questions about candidate resume ${resumepdf} and job description text/pdf he provided ${jobdescriptionpdf} OR ${jobtext} Provide a professional, structured interview questions in JSON object with all questions in a single array and in following way:
-     type: "OBJECT",
-      properties: {
-        interviewquestions: {
-        type: "ARRAY",
-        items: {type: "STRING"},
-        },
-      },`;
-        const response = await ai.models.generateContent({
-          model: "gemini-2.0-flash-lite",
-          contents: {
-            parts: [
-              {
-                text: `${interviewprompt}\n\nResume:\n${resumepdf}`,
-              },
-              {
-                inlineData: {
-                  mimeType: "application/pdf",
-                  data: resumepdf.split(",")[1],
+            Rules:
+            - Give questions in array.
+            - Keep tone professional, concise, and recruiter-like.
+            - Do NOT include explanations, markdown, or text outside of the JSON.
+            - Output must be strictly valid JSON.
+            - Give 20 questions.
+            `;
+        const jobdescription = getjoburl ? getjoburl : getjobdesc;
+        const inputtype = getjoburl ? "input_file" : "input_text";
+        const jobcontent =
+          inputtype === "input_file"
+            ? {
+                type: "input_file",
+                file_url: jobdescription,
+              }
+            : {
+                type: "input_text",
+                text: jobdescription,
+              };
+        const response = await client.responses.create({
+          model: "gpt-5-2025-08-07",
+          input: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "input_text",
+                  text: interviewprompt,
                 },
-              },
-              {
-                inlineData: {
-                  mimeType: "application/pdf",
-                  data: jobdescriptionpdf.split(",")[1],
+                {
+                  type: "input_file",
+                  file_url: getresumeurl,
                 },
-              },
-            ],
-          },
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: interviewSchema,
-          },
+                jobcontent,
+              ],
+            },
+          ],
+          reasoning: { effort: "high" },
         });
         if (response) {
-          const parseddata = response.candidates[0].content.parts[0].text;
+          const parseresponse = JSON.parse(response.output[1].content[0].text);
           try {
-            const extracttext = parseddata.match(/({[\s\S]*})/);
-            if (extracttext && extracttext[1]) {
-              const parsedanalysis = JSON.parse(extracttext[1]);
-              if (parsedanalysis) {
-                setinterviewquesitons(parsedanalysis);
-                const converttostring = JSON.stringify(parsedanalysis);
-                localStorage.setItem("Saveinterviewquestions", converttostring);
-              } else {
-                setmessage("Failed to generate response.");
-                setshowtoast(true);
-                setTimeout(() => {
-                  setshowtoast(false);
-                }, 3000);
-              }
+            if (parseresponse) {
+              setinterviewquesitons(parseresponse);
+              const converttostring = JSON.stringify(parseresponse);
+              localStorage.setItem("Saveinterviewquestions", converttostring);
+            } else {
+              setmessage("Failed to generate response.");
+              setshowtoast(true);
+              setTimeout(() => {
+                setshowtoast(false);
+              }, 3000);
             }
           } catch (e) {
             setmessage(`API Error ${e}`);
@@ -651,23 +498,19 @@ export default function AIResumeEnhancer() {
                             Clarity
                             <p
                               className={`${
-                                airesponse.matchScore.subscores.clarity
-                                  .clarityscore >= 75
+                                airesponse.matchScore.subscores.clarity.score >=
+                                75
                                   ? styles.otherscoregreen
                                   : airesponse.matchScore.subscores.clarity
-                                      .clarityscore >= 60
+                                      .score >= 60
                                   ? styles.otherscoreorange
                                   : airesponse.matchScore.subscores.clarity
-                                      .clarityscore < 60
+                                      .score < 60
                                   ? styles.otherscorered
                                   : ""
                               }`}
                             >
-                              {
-                                airesponse.matchScore.subscores.clarity
-                                  .clarityscore
-                              }
-                              %
+                              {airesponse.matchScore.subscores.clarity.score}%
                             </p>
                             <button
                               className="accordion-button collapsed"
@@ -687,7 +530,7 @@ export default function AIResumeEnhancer() {
                               <p>
                                 {
                                   airesponse.matchScore.subscores.clarity
-                                    .claritydescription
+                                    .description
                                 }
                               </p>
                             </div>
@@ -698,23 +541,19 @@ export default function AIResumeEnhancer() {
                             Grammar
                             <p
                               className={`${
-                                airesponse.matchScore.subscores.grammar
-                                  .grammarscore >= 75
+                                airesponse.matchScore.subscores.grammar.score >=
+                                75
                                   ? styles.otherscoregreen
                                   : airesponse.matchScore.subscores.grammar
-                                      .grammarscore >= 60
+                                      .score >= 60
                                   ? styles.otherscoreorange
                                   : airesponse.matchScore.subscores.grammar
-                                      .grammarscore < 60
+                                      .score < 60
                                   ? styles.otherscorered
                                   : ""
                               }`}
                             >
-                              {
-                                airesponse.matchScore.subscores.grammar
-                                  .grammarscore
-                              }
-                              %
+                              {airesponse.matchScore.subscores.grammar.score}%
                             </p>
                             <button
                               className="accordion-button collapsed"
@@ -734,7 +573,7 @@ export default function AIResumeEnhancer() {
                               <p>
                                 {
                                   airesponse.matchScore.subscores.grammar
-                                    .grammardescription
+                                    .description
                                 }
                               </p>
                             </div>
@@ -745,23 +584,19 @@ export default function AIResumeEnhancer() {
                             Impact
                             <p
                               className={`${
-                                airesponse.matchScore.subscores.impact
-                                  .impactscore >= 75
+                                airesponse.matchScore.subscores.impact.score >=
+                                75
                                   ? styles.otherscoregreen
                                   : airesponse.matchScore.subscores.impact
-                                      .impactscore >= 60
+                                      .score >= 60
                                   ? styles.otherscoreorange
                                   : airesponse.matchScore.subscores.impact
-                                      .impactscore < 60
+                                      .score < 60
                                   ? styles.otherscorered
                                   : ""
                               }`}
                             >
-                              {
-                                airesponse.matchScore.subscores.impact
-                                  .impactscore
-                              }
-                              %
+                              {airesponse.matchScore.subscores.impact.score}%
                             </p>
                             <button
                               className="accordion-button collapsed"
@@ -781,7 +616,7 @@ export default function AIResumeEnhancer() {
                               <p>
                                 {
                                   airesponse.matchScore.subscores.impact
-                                    .impactdescription
+                                    .description
                                 }
                               </p>
                             </div>
@@ -793,22 +628,18 @@ export default function AIResumeEnhancer() {
                             <p
                               className={`${
                                 airesponse.matchScore.subscores.sections
-                                  .sectionsscore >= 75
+                                  .score >= 75
                                   ? styles.otherscoregreen
                                   : airesponse.matchScore.subscores.sections
-                                      .sectionsscore >= 60
+                                      .score >= 60
                                   ? styles.otherscoreorange
                                   : airesponse.matchScore.subscores.sections
-                                      .sectionsscore < 60
+                                      .score < 60
                                   ? styles.otherscorered
                                   : ""
                               }`}
                             >
-                              {
-                                airesponse.matchScore.subscores.sections
-                                  .sectionsscore
-                              }
-                              %
+                              {airesponse.matchScore.subscores.sections.score}%
                             </p>
                             <button
                               className="accordion-button collapsed"
@@ -828,7 +659,7 @@ export default function AIResumeEnhancer() {
                               <p>
                                 {
                                   airesponse.matchScore.subscores.sections
-                                    .sectionsdescription
+                                    .description
                                 }
                               </p>
                             </div>
@@ -964,7 +795,7 @@ export default function AIResumeEnhancer() {
                       ></iframe>
                     </TabPanel>
                     <TabPanel style={{ marginTop: "30px", marginLeft: "30px" }}>
-                      {jobdesc === null ? (
+                      {jobdescurl === "" ? (
                         <>
                           <h1 className={`${styles.jobheading}`}>
                             Job Description:{" "}
@@ -1024,7 +855,9 @@ export default function AIResumeEnhancer() {
                     </TabPanel>
                     {tabindex === 3 || interviewquestions ? (
                       <TabPanel className={`${styles.interviewprep}`}>
-                        <h1>Interview Questions</h1>
+                        <h1 style={{ marginBottom: "30px" }}>
+                          Interview Questions
+                        </h1>
                         {interviewloader === true ? (
                           <Skeleton
                             style={{ marginTop: "20px" }}
@@ -1032,11 +865,20 @@ export default function AIResumeEnhancer() {
                           />
                         ) : (
                           <>
-                            {interviewquestions.properties.interviewquestions.map(
+                            {interviewquestions.interviewquestions.questions.map(
                               (question, index) => {
                                 return (
-                                  <div key={index}>
-                                    <span>Q: </span>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "start",
+                                    }}
+                                    key={index}
+                                  >
+                                    <span style={{ marginRight: "10px" }}>
+                                      Q{index = index +1} 
+                                    </span>
                                     <Markdown>{question}</Markdown>
                                   </div>
                                 );
@@ -1149,7 +991,7 @@ export default function AIResumeEnhancer() {
                 <div className={`${styles.enhancecolright}`}>
                   <div className={`${styles.uploadarea}`}>
                     <form onSubmit={(e) => handlefileupload(e)}>
-                      {file === null ? (
+                      {resumeurl === "" ? (
                         <>
                           {skeletonloader ? (
                             <Skeleton count={0.2} />
@@ -1175,15 +1017,18 @@ export default function AIResumeEnhancer() {
                           ) : (
                             <>
                               <div className={`${styles.uploadbox}`}>
-                                <FileUploader
+                                <FileUploaderMinimal
+                                  useCloudImageEditor={false}
+                                  sourceList="local, gdrive"
+                                  classNameUploader="uc-light"
+                                  pubkey={fileuploaderapikey}
                                   multiple={false}
-                                  handleChange={handleChange}
-                                  required
-                                  name="file"
-                                  types={fileTypes}
+                                  fileTypes={["application/pdf"]}
+                                  onFileUploadSuccess={(e) =>
+                                    handleresumeuploader(e)
+                                  }
                                 />
                               </div>
-                              <p>{file ? `File name: ${file.name}` : ""}</p>
                             </>
                           )}
                         </>
@@ -1196,16 +1041,18 @@ export default function AIResumeEnhancer() {
                             Description.
                           </p>
                           <div className={`${styles.uploadbox}`}>
-                            <FileUploader
+                            <FileUploaderMinimal
+                              useCloudImageEditor={false}
+                              sourceList="local, gdrive"
+                              classNameUploader="uc-light"
+                              pubkey={fileuploaderapikey}
                               multiple={false}
-                              handleChange={handlejobChange}
-                              name="jobfile"
-                              types={fileTypes}
-                              classes={`${
-                                emptyjderror === true
-                                  ? styles.jobdescuploadererror
-                                  : ""
-                              }`}
+                              fileTypes={["application/pdf"]}
+                              onFileUploadSuccess={(e) => handlejobuploader(e)}
+                              onFileRemoved={() => {
+                                localStorage.removeItem("Savejoburl");
+                                setjobdescurl("");
+                              }}
                             />
                             <p>OR</p>
                             <textarea
