@@ -4,10 +4,7 @@ import { GrScorecard } from "react-icons/gr";
 import { FaPencilAlt } from "react-icons/fa";
 import { FaLightbulb } from "react-icons/fa6";
 import { FaUpload } from "react-icons/fa";
-import { FileUploader } from "react-drag-drop-files";
 import { useEffect, useState } from "react";
-import pdfToText from "react-pdftotext";
-import { GoogleGenAI } from "@google/genai";
 import { BiLoaderAlt } from "react-icons/bi";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -16,15 +13,10 @@ import "react-tabs/style/react-tabs.css";
 import { buildStyles, CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import Markdown from "react-markdown";
-import favicon from "../assets/favicon.png";
 import { ImCancelCircle } from "react-icons/im";
-import OpenAI from "openai";
-import fs from "fs";
-import {
-  FileUploaderRegular,
-  FileUploaderMinimal,
-} from "@uploadcare/react-uploader";
+import { FileUploaderMinimal } from "@uploadcare/react-uploader";
 import "@uploadcare/react-uploader/core.css";
+import { Link } from "react-scroll";
 
 export default function AIResumeEnhancer() {
   const [airesponse, setairesponse] = useState("");
@@ -41,39 +33,24 @@ export default function AIResumeEnhancer() {
   const [showtoast, setshowtoast] = useState(false);
   const [message, setmessage] = useState("");
 
-  const modelapikey = import.meta.env.VITE_API;
   const fileuploaderapikey = import.meta.env.VITE_UPLOADER;
-  const client = new OpenAI({
-    apiKey: modelapikey,
-    dangerouslyAllowBrowser: true,
-  });
-  
 
   useEffect(() => {
     setskeletonloader(true);
-    const retrieveresponse = localStorage.getItem("Saveresponse");
-    const getresumeurl = localStorage.getItem("Saveresumeurl");
-    const getjoburl = localStorage.getItem("Savejoburl");
-    const getjobdesc = localStorage.getItem("Savejobdesc");
-    const retrieveinterviewquestions = localStorage.getItem(
-      "Saveinterviewquestions"
-    );
-    const converttoobject = JSON.parse(retrieveresponse);
-    const convertinterviewtoobject = JSON.parse(retrieveinterviewquestions);
-    if (converttoobject) {
-      setresumeurl(getresumeurl);
-      setjobdesctext(getjobdesc);
-      setjobdescurl(getjoburl);
-      setairesponse(converttoobject);
-    }
-    if (convertinterviewtoobject) {
-      setinterviewquesitons(convertinterviewtoobject);
-      setinterviewbar(false);
+    if (airesponse) {
+      const handleBeforeUnload = (e) => {
+        e.preventDefault();
+        e.returnValue = "";
+      };
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
     }
     setTimeout(() => {
       setskeletonloader(false);
     }, 3500);
-  }, []);
+  }, [airesponse]);
   const handleresumeuploader = (e) => {
     if (e.fileInfo.mimeType !== "application/pdf") {
       setshowtoast(true);
@@ -84,7 +61,6 @@ export default function AIResumeEnhancer() {
       return;
     } else {
       setresumeurl(e.fileInfo.cdnUrl);
-      localStorage.setItem("Saveresumeurl", e.fileInfo.cdnUrl);
     }
   };
   const handlejobuploader = (e) => {
@@ -97,33 +73,28 @@ export default function AIResumeEnhancer() {
       return;
     } else {
       setjobdescurl(e.fileInfo.cdnUrl);
-      localStorage.setItem("Savejoburl", e.fileInfo.cdnUrl);
     }
   };
-  const handlefileupload = (e) => {
+  const handlejobdesc = (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-    setjobdesctext(data.jobdesc);
-    localStorage.setItem("Savejobdesc", data.jobdesc);
-    const getresumeurl = localStorage.getItem("Saveresumeurl");
-    const getjoburl = localStorage.getItem("Savejoburl");
-    const getjobdesc = localStorage.getItem("Savejobdesc");
-    if (getresumeurl === null) {
+    const jobtextdesc = e.target.value;
+    setjobdesctext(jobtextdesc);
+  };
+
+  const handleuploads = (e) => {
+    e.preventDefault();
+    if (resumeurl === null) {
       setshowtoast(true);
       setmessage("Upload resume please...");
-      localStorage.removeItem("Savejobdesc");
       setjobdesctext("");
       setTimeout(() => {
         setshowtoast(false);
       }, 3000);
       return;
-    } else if (getjoburl === null && getjobdesc === "") {
+    } else if (jobdescurl === null && jobdesctext === "") {
       setemptyjderror(true);
       setshowtoast(true);
       setmessage("Upload or write job description please...");
-      localStorage.removeItem("Savejobdesc");
-      localStorage.removeItem("Savejoburl");
       setjobdescurl("");
       setjobdesctext("");
       setTimeout(() => {
@@ -131,24 +102,23 @@ export default function AIResumeEnhancer() {
       }, 3000);
       return;
     }
-    if (getjoburl && getjobdesc) {
+    if (jobdescurl && jobdesctext) {
       setshowtoast(true);
       setmessage("You cannot upload two job descriptions at same time.");
-      localStorage.removeItem("Savejobdesc");
       setjobdesctext("");
       setTimeout(() => {
         setshowtoast(false);
       }, 3000);
       return;
     } else {
-      handleapiresponse(getresumeurl, getjoburl, getjobdesc);
+      handleapiresponse(resumeurl, jobdescurl, jobdesctext);
     }
   };
-  const handleapiresponse = async (getresumeurl, getjoburl, getjobdesc) => {
+  const handleapiresponse = async (resumeurl, jobdescurl, jobdesctext) => {
     try {
       setloader(true);
-      if (!getresumeurl) {
-        setmessage("No resume text found in localStorage.");
+      if (!resumeurl) {
+        setmessage("No resume found.");
         setshowtoast(true);
         setTimeout(() => {
           setshowtoast(false);
@@ -156,8 +126,8 @@ export default function AIResumeEnhancer() {
         setloader(false);
         return;
       }
-      if (!getjoburl && getjobdesc === "") {
-        setmessage("No job description text found in localStorage.");
+      if (!jobdescurl && jobdesctext === "") {
+        setmessage("No job description found.");
         setshowtoast(true);
         setTimeout(() => {
           setshowtoast(false);
@@ -165,123 +135,18 @@ export default function AIResumeEnhancer() {
         setloader(false);
         return;
       }
-
-      const prompt = `
-    You are a senior technical recruiter for a leading tech company.
-    Your task is to analyze the resume and job description, then return ONLY a valid JSON object.
-    Output JSON structure (strictly follow this shape, fill with actual values):
-    {
-      "candidatedetails": {
-        "name": "string",
-        "email": "string",
-        "phoneno": "string",
-        "city": "string",
-        "country": "string",
-        "linkedin": "string",
-        "github": "string",
-        "website": "string"
-      },
-      "summary": "string",
-      "matchScore": {
-        "overall": number,
-        "subscores": {
-          "clarity": { "score": number, "description": "string" },
-          "grammar": { "score": number, "description": "string" },
-          "sections": { "score": number, "description": "string" },
-          "impact": { "score": number, "description": "string" }
-        }
-      },
-      "atsFormat": {
-        "isAtsFriendly": "Yes/No",
-        "suggestions": ["string"]
-      },
-      "technicalSkills": {
-        "listedSkills": ["string"],
-        "suggestedSkills": ["string"]
-      },
-      "detailedAnalysis": {
-        "strengths": ["string"],
-        "areasForImprovement": ["string"]
-      },
-      "enhancedresume": {
-        "corrections": [
-          {
-            "section": "string",
-            "item": "string",
-            "original": "string",
-            "correction": "string"
-          }
-        ]
-      }
-    }
-    Rules:
-    - Don't be strict in ATS friendly yes/no. If its very much necessary for job application then give NO, otherwise yes, with necessary suggestions.
-    - Scores should be from out of 100.
-    - Focus mainly on **relevance to the job description** when giving scores and feedback.
-    - Highlight only **important strengths and weaknesses** that affect job fit; ignore trivial grammar/formatting issues unless they seriously harm clarity.
-    - ATS suggestions should be **practical and minimal**, not overly strict.
-    - Suggested skills should only include **key missing skills from the job description**, not every possible tech skill.
-    - Keep tone professional, concise, and recruiter-like.
-    - Do NOT include explanations, markdown, or text outside of the JSON.
-    - Output must be strictly valid JSON.
-    `;
-      const jobdescription = getjoburl ? getjoburl : getjobdesc;
-      const inputtype = getjoburl ? "input_file" : "input_text";
-      const jobcontent =
-        inputtype === "input_file"
-          ? {
-              type: "input_file",
-              file_url: jobdescription,
-            }
-          : {
-              type: "input_text",
-              text: jobdescription,
-            };
-      const response = await client.responses.create({
-        model: "gpt-5-2025-08-07",
-
-        input: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: prompt,
-              },
-              {
-                type: "input_file",
-                file_url: getresumeurl,
-              },
-              jobcontent,
-            ],
-          },
-        ],
-        reasoning: { effort: "medium" },
+      const callapidata = await fetch("http://localhost:4001/api/analysisapi", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          resumeurl,
+          jobdescurl,
+          jobdesctext,
+        }),
       });
-      if (response) {
-        const parseresponse = JSON.parse(response.output[1].content[0].text);
-        try {
-          if (parseresponse) {
-            setairesponse(parseresponse);
-            const converttostring = JSON.stringify(parseresponse);
-            localStorage.setItem("Saveresponse", converttostring);
-          } else {
-            setmessage("failed to generate response.");
-            setshowtoast(true);
-            setTimeout(() => {
-              setshowtoast(false);
-            }, 3000);
-          }
-        } catch (e) {
-          console.log(e);
-        }
-      } else {
-        setmessage("No text found in the API response.");
-        setshowtoast(true);
-        setTimeout(() => {
-          setshowtoast(false);
-        }, 3000);
-      }
+      const callapi = await callapidata.json();
+      setairesponse(callapi);
     } catch (e) {
       setmessage(`No API response. ${e}`);
       setshowtoast(true);
@@ -293,19 +158,13 @@ export default function AIResumeEnhancer() {
     }
   };
   const handleinterview = async (index) => {
-    const retrieveinterviewquestions = localStorage.getItem(
-      "Saveinterviewquestions"
-    );
-    if (index === 3 && !retrieveinterviewquestions) {
+    if (index === 3) {
       settabindex(3);
       setinterviewbar(false);
       try {
         setintreviewloader(true);
-        const getresumeurl = localStorage.getItem("Saveresumeurl");
-        const getjoburl = localStorage.getItem("Savejoburl");
-        const getjobdesc = localStorage.getItem("Savejobdesc");
-        if (getjoburl === null && getjobdesc === "") {
-          setmessage("No job description text found in localStorage.");
+        if (jobdescurl === null && jobdesctext === "") {
+          setmessage("No job description text found.");
           setshowtoast(true);
           setTimeout(() => {
             setshowtoast(false);
@@ -313,83 +172,21 @@ export default function AIResumeEnhancer() {
           setloader(false);
           return;
         }
-        const interviewprompt = `You are a senior technical recruiter for a leading tech company. 
-        Your task is to ask interview questions according to job description and candidate resume. 
-        Questions must be legit, scenario based, skill based according to resume and job description requirement. 
-        Return only valid JSON object
-        Output JSON structure (strictly follow this shape, fill with actual values):
-            {
-              interviewquestions: {
-                questions: "Array",
-              },
-            },
-            Rules:
-            - Give questions in array.
-            - Keep tone professional, concise, and recruiter-like.
-            - Do NOT include explanations, markdown, or text outside of the JSON.
-            - Output must be strictly valid JSON.
-            - Give 20 questions.
-            `;
-        const jobdescription = getjoburl ? getjoburl : getjobdesc;
-        const inputtype = getjoburl ? "input_file" : "input_text";
-        const jobcontent =
-          inputtype === "input_file"
-            ? {
-                type: "input_file",
-                file_url: jobdescription,
-              }
-            : {
-                type: "input_text",
-                text: jobdescription,
-              };
-        const response = await client.responses.create({
-          model: "gpt-5-2025-08-07",
-          input: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "input_text",
-                  text: interviewprompt,
-                },
-                {
-                  type: "input_file",
-                  file_url: getresumeurl,
-                },
-                jobcontent,
-              ],
-            },
-          ],
-          reasoning: { effort: "high" },
-        });
-        if (response) {
-          const parseresponse = JSON.parse(response.output[1].content[0].text);
-          try {
-            if (parseresponse) {
-              setinterviewquesitons(parseresponse);
-              const converttostring = JSON.stringify(parseresponse);
-              localStorage.setItem("Saveinterviewquestions", converttostring);
-            } else {
-              setmessage("Failed to generate response.");
-              setshowtoast(true);
-              setTimeout(() => {
-                setshowtoast(false);
-              }, 3000);
-            }
-          } catch (e) {
-            setmessage(`API Error ${e}`);
-            setshowtoast(true);
-            setTimeout(() => {
-              setshowtoast(false);
-            }, 3000);
+        const callinterviewapidata = await fetch(
+          "http://localhost:4001/api/interviewapi",
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              resumeurl,
+              jobdescurl,
+              jobdesctext,
+            }),
           }
-        } else {
-          setmessage("No text found in the API response.");
-          setshowtoast(true);
-          setTimeout(() => {
-            setshowtoast(false);
-          }, 3000);
-        }
+        );
+        const callinterviewapi = await callinterviewapidata.json();
+        setinterviewquesitons(callinterviewapi);
       } catch (e) {
         setmessage(`API Error ${e}`);
         setshowtoast(true);
@@ -429,12 +226,20 @@ export default function AIResumeEnhancer() {
                         </p>
                       </div>
                       <div className="">
-                        <button
-                          className={`${styles.jobinterviewbtn}`}
-                          onClick={() => handleinterview(3)}
+                        <Link
+                          to="interviewquestions"
+                          spy={true}
+                          smooth={true}
+                          offset={-70}
+                          duration={500}
                         >
-                          Generate Questions
-                        </button>
+                          <button
+                            className={`${styles.jobinterviewbtn}`}
+                            onClick={() => handleinterview(3)}
+                          >
+                            Generate Questions
+                          </button>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -794,7 +599,7 @@ export default function AIResumeEnhancer() {
                       ></iframe>
                     </TabPanel>
                     <TabPanel style={{ marginTop: "30px", marginLeft: "30px" }}>
-                      {!jobdesctext ? (
+                      {!jobdescurl ? (
                         <>
                           <h1 className={`${styles.jobheading}`}>
                             Job Description:{" "}
@@ -854,37 +659,39 @@ export default function AIResumeEnhancer() {
                     </TabPanel>
                     {tabindex === 3 || interviewquestions ? (
                       <TabPanel className={`${styles.interviewprep}`}>
-                        <h1 style={{ marginBottom: "30px" }}>
-                          Interview Questions
-                        </h1>
-                        {interviewloader === true ? (
-                          <Skeleton
-                            style={{ marginTop: "20px" }}
-                            count={10.5}
-                          />
-                        ) : (
-                          <>
-                            {interviewquestions.interviewquestions.questions.map(
-                              (question, index) => {
-                                return (
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "start",
-                                    }}
-                                    key={index}
-                                  >
-                                    <span style={{ marginRight: "10px" }}>
-                                      Q{(index = index + 1)}
-                                    </span>
-                                    <Markdown>{question}</Markdown>
-                                  </div>
-                                );
-                              }
-                            )}
-                          </>
-                        )}
+                        <section id="interviewquestions">
+                          <h1 style={{ marginBottom: "30px" }}>
+                            Interview Questions
+                          </h1>
+                          {interviewloader === true ? (
+                            <Skeleton
+                              style={{ marginTop: "20px" }}
+                              count={10.5}
+                            />
+                          ) : (
+                            <>
+                              {interviewquestions.interviewquestions.questions.map(
+                                (question, index) => {
+                                  return (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "start",
+                                      }}
+                                      key={index}
+                                    >
+                                      <span style={{ marginRight: "10px" }}>
+                                        Q{(index = index + 1)}
+                                      </span>
+                                      <Markdown>{question}</Markdown>
+                                    </div>
+                                  );
+                                }
+                              )}
+                            </>
+                          )}
+                        </section>
                       </TabPanel>
                     ) : (
                       ""
@@ -989,7 +796,7 @@ export default function AIResumeEnhancer() {
                 </div>
                 <div className={`${styles.enhancecolright}`}>
                   <div className={`${styles.uploadarea}`}>
-                    <form onSubmit={(e) => handlefileupload(e)}>
+                    <form onSubmit={(e) => handleuploads(e)}>
                       {resumeurl === "" ? (
                         <>
                           {skeletonloader ? (
@@ -1058,6 +865,7 @@ export default function AIResumeEnhancer() {
                               name="jobdesc"
                               id="jobdesc"
                               placeholder="Enter Job Description"
+                              onChange={(e) => handlejobdesc(e)}
                               className={`${
                                 emptyjderror === true
                                   ? styles.jobdescerror
@@ -1077,7 +885,14 @@ export default function AIResumeEnhancer() {
                       ) : (
                         <>
                           {loader === false ? (
-                            <button className={`${styles.uploadbtn}`}>
+                            <button
+                              style={
+                                jobdesctext === ""
+                                  ? { opacity: 0.4, pointerEvents: "none" }
+                                  : { opacity: 1, pointerEvents: 'all' }
+                              }
+                              className={`${styles.uploadbtn}`}
+                            >
                               Upload
                             </button>
                           ) : (
