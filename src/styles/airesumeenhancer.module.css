@@ -451,6 +451,9 @@
     gap: 0px;
     margin-block: 30px;
   }
+  .responserow{
+    grid-template-columns: repeat(1, 1fr);
+  }
   .responsecolright,
   .enhancecolright {
     margin-top: 30px;
