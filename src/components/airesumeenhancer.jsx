@@ -43,6 +43,9 @@ export default function AIResumeEnhancer() {
         e.returnValue = "";
       };
       window.addEventListener("beforeunload", handleBeforeUnload);
+
+      setairesponse(airesponse);
+      setskeletonloader(false);
       return () => {
         window.removeEventListener("beforeunload", handleBeforeUnload);
       };
@@ -149,6 +152,7 @@ export default function AIResumeEnhancer() {
         }
       );
       const callapi = await callapidata.json();
+      console.log(callapi);
       setairesponse(callapi);
     } catch (e) {
       setmessage(`No API response. ${e}`);
@@ -892,9 +896,9 @@ export default function AIResumeEnhancer() {
                               style={
                                 jobdesctext === "" && jobdescurl === ""
                                   ? { opacity: 0.4, pointerEvents: "none" }
-                                  // : jobdesctext && jobdescurl
-                                  // ? { opacity: 0.4, pointerEvents: "none" }
-                                  : { opacity: 1, pointerEvents: "all" }
+                                  : // : jobdesctext && jobdescurl
+                                    // ? { opacity: 0.4, pointerEvents: "none" }
+                                    { opacity: 1, pointerEvents: "all" }
                               }
                               className={`${styles.uploadbtn}`}
                             >
