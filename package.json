@@ -9,7 +9,7 @@
   },
   "author": "SoftTech",
   "license": "ISC",
-  "description": "",
+  "description": "A backend for AIResumeEnhancer",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
