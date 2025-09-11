@@ -21,9 +21,6 @@ app.get("/", (req, res) => {
   res.send("Server running on Vercel");
 });
 
-app.get("/", (req, res) => {
-  res.send("Server running");
-});
 app.use("/api", ApiCall);
 
 module.exports = app;
