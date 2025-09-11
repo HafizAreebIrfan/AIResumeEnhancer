@@ -91,7 +91,7 @@ export default function AIResumeEnhancer() {
         setshowtoast(false);
       }, 3000);
       return;
-    } else if (jobdescurl === null && jobdesctext === "") {
+    } else if (jobdescurl === "" && jobdesctext === "") {
       setemptyjderror(true);
       setshowtoast(true);
       setmessage("Upload or write job description please...");
@@ -135,16 +135,19 @@ export default function AIResumeEnhancer() {
         setloader(false);
         return;
       }
-      const callapidata = await fetch("https://airesumeenhancerbackend.vercel.app/api/analysisapi", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          resumeurl,
-          jobdescurl,
-          jobdesctext,
-        }),
-      });
+      const callapidata = await fetch(
+        "https://airesumeenhancerbackend.vercel.app/api/analysisapi",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            resumeurl,
+            jobdescurl,
+            jobdesctext,
+          }),
+        }
+      );
       const callapi = await callapidata.json();
       setairesponse(callapi);
     } catch (e) {
@@ -887,9 +890,11 @@ export default function AIResumeEnhancer() {
                           {loader === false ? (
                             <button
                               style={
-                                jobdesctext === ""
+                                jobdesctext === "" && jobdescurl === ""
                                   ? { opacity: 0.4, pointerEvents: "none" }
-                                  : { opacity: 1, pointerEvents: 'all' }
+                                  // : jobdesctext && jobdescurl
+                                  // ? { opacity: 0.4, pointerEvents: "none" }
+                                  : { opacity: 1, pointerEvents: "all" }
                               }
                               className={`${styles.uploadbtn}`}
                             >
