@@ -135,7 +135,7 @@ export default function AIResumeEnhancer() {
         setloader(false);
         return;
       }
-      const callapidata = await fetch("http://localhost:4001/api/analysisapi", {
+      const callapidata = await fetch("https://airesumeenhancerbackend.vercel.app/api/analysisapi", {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/json" },
@@ -173,7 +173,7 @@ export default function AIResumeEnhancer() {
           return;
         }
         const callinterviewapidata = await fetch(
-          "http://localhost:4001/api/interviewapi",
+          "https://airesumeenhancerbackend.vercel.app/api/interviewapi",
           {
             method: "POST",
             credentials: "include",
