@@ -632,7 +632,7 @@ export default function AIResumeEnhancer() {
                       </p>
                       {airesponse.enhancedresume.corrections.map(
                         (corrections, index) => (
-                          <div key={index}>
+                          <div className={`${styles.correctioncard}`} key={index}>
                             <p className={`${styles.correctioncontent}`}>
                               <span>
                                 {corrections.Section

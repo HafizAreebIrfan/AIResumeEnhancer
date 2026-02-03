@@ -6,7 +6,7 @@ const ApiCall = require("./routes/apiroute");
 const app = express();
 app.use(
   cors({
-    origin: ["https://airesumeenhancer.vercel.app", "http://localhost:4000"],
+    origin: ["https://airesumeenhancer.vercel.app", "http://localhost:5173", "http://localhost:4000"],
     credentials: true,
   })
 );
