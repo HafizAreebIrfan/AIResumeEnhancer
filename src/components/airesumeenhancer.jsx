@@ -836,7 +836,7 @@ export default function AIResumeEnhancer() {
                                   classNameUploader="uc-light"
                                   pubkey={fileuploaderapikey}
                                   multiple={false}
-                                  fileTypes={["application/pdf"]}
+                                  accept="application/pdf"
                                   onFileUploadSuccess={(e) =>
                                     handleresumeuploader(e)
                                   }
