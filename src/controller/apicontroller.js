@@ -100,7 +100,7 @@ const CallAPI = async (req, res) => {
           };
     const callapi = env.OPENAIENABLED
       ? await client.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-3.1-flash-lite",
           contents: [
             {
               role: "user",
@@ -179,7 +179,7 @@ const CallInterviewAPI = async (req, res) => {
           };
     const response = env.OPENAIENABLED
       ? await client.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-3.1-flash-lite",
           contents: [
             {
               role: "user",
