@@ -6,7 +6,6 @@ const client = new OpenAI({
 });
 
 const CallAPI = async (req, res) => {
-  console.log("In api call")
   try {
     const { resumeurl, jobdescurl, jobdesctext } = req.body;
     const prompt = `
@@ -102,7 +101,6 @@ const CallAPI = async (req, res) => {
     });
     const parseresponse = callapi.output[1].content[0]?.text || "{}";
     const parsed = JSON.parse(parseresponse);
-    console.log("API Called", parsed);
     res.status(200).json(parsed);
   } catch (e) {
     res.status(400).json({ error: e.message });
