@@ -11,10 +11,12 @@
   "license": "ISC",
   "description": "A backend for AIResumeEnhancer",
   "dependencies": {
+    "@google/genai": "^2.10.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "nodemon": "^3.1.10",
-    "openai": "^5.20.1"
+    "openai": "^5.20.1",
+    "pdf-parse": "^2.4.5"
   }
 }

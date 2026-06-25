@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const ApiCall = require("./routes/apiroute");
+const ApiCall = require("./src/routes/apiroute");
 
 const app = express();
 app.use(
@@ -21,4 +21,12 @@ app.get("/", (req, res) => {
 
 app.use("/api", ApiCall);
 
+if (require.main === module) {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => {
+    console.log(`Server running locally on port ${PORT}`);
+  });
+}
+
 module.exports = app;
+

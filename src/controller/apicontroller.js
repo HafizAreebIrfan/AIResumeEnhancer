@@ -1,9 +1,28 @@
 require("dotenv").config();
 const OpenAI = require("openai");
-const client = new OpenAI({
-  apiKey: process.env.VITE_API,
-  dangerouslyAllowBrowser: true,
+const { GoogleGenAI } = require("@google/genai");
+const { env } = require("../infrastucture/config/env");
+
+const GeminiClient = new GoogleGenAI({ apiKey: env.GEMINI });
+const OpenAICLient = new OpenAI({
+  apiKey: env.OPENAI,
 });
+
+const client = env.OPENAIENABLED ? GeminiClient : OpenAICLient;
+
+// Helper to fetch a file and convert it for Gemini
+async function getGeminiFile(url) {
+  if (!url) return null;
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  return {
+    inlineData: {
+      data: buffer.toString("base64"),
+      mimeType: response.headers.get("content-type") || "application/pdf",
+    },
+  };
+}
 
 const CallAPI = async (req, res) => {
   try {
@@ -79,27 +98,47 @@ const CallAPI = async (req, res) => {
             type: "input_text",
             text: jobdescription,
           };
-    const callapi = await client.responses.create({
-      model: "gpt-5-2025-08-07",
-      input: [
-        {
-          role: "user",
-          content: [
+    const callapi = env.OPENAIENABLED
+      ? await client.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: [
             {
-              type: "input_text",
-              text: prompt,
+              role: "user",
+              parts: [
+                { text: prompt },
+                resumeurl ? await getGeminiFile(resumeurl) : null,
+                jobdescurl
+                  ? await getGeminiFile(jobdescurl)
+                  : jobdesctext
+                    ? { text: jobdesctext }
+                    : null,
+              ].filter(Boolean),
             },
-            {
-              type: "input_file",
-              file_url: resumeurl,
-            },
-            jobcontent,
           ],
-        },
-      ],
-      reasoning: { effort: "medium" },
-    });
-    const parseresponse = callapi.output[1].content[0]?.text || "{}";
+        })
+      : await client.responses.create({
+          model: "gpt-5-2025-08-07",
+          input: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "input_text",
+                  text: prompt,
+                },
+                {
+                  type: "input_file",
+                  file_url: resumeurl,
+                },
+                jobcontent,
+              ],
+            },
+          ],
+          reasoning: { effort: "medium" },
+        });
+    const parseresponse = env.OPENAIENABLED
+      ? callapi.text || "{}"
+      : callapi.output[1].content[0]?.text || "{}";
     const parsed = JSON.parse(parseresponse);
     res.status(200).json(parsed);
   } catch (e) {
@@ -138,27 +177,47 @@ const CallInterviewAPI = async (req, res) => {
             type: "input_text",
             text: jobdescription,
           };
-    const response = await client.responses.create({
-      model: "gpt-5-2025-08-07",
-      input: [
-        {
-          role: "user",
-          content: [
+    const response = env.OPENAIENABLED
+      ? await client.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: [
             {
-              type: "input_text",
-              text: interviewprompt,
+              role: "user",
+              parts: [
+                { text: interviewprompt },
+                resumeurl ? await getGeminiFile(resumeurl) : null,
+                jobdescurl
+                  ? await getGeminiFile(jobdescurl)
+                  : jobdesctext
+                    ? { text: jobdesctext }
+                    : null,
+              ].filter(Boolean),
             },
-            {
-              type: "input_file",
-              file_url: resumeurl,
-            },
-            jobcontent,
           ],
-        },
-      ],
-      reasoning: { effort: "high" },
-    });
-    const parseresponse = JSON.parse(response.output[1].content[0].text);
+        })
+      : await client.responses.create({
+          model: "gpt-5-2025-08-07",
+          input: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "input_text",
+                  text: interviewprompt,
+                },
+                {
+                  type: "input_file",
+                  file_url: resumeurl,
+                },
+                jobcontent,
+              ],
+            },
+          ],
+          reasoning: { effort: "high" },
+        });
+    const parseresponse = env.OPENAIENABLED
+      ? JSON.parse(response.text)
+      : JSON.parse(response.output[1].content[0].text);
     res.status(200).json(parseresponse);
   } catch (e) {
     res.status(400).json({ error: e.message });
